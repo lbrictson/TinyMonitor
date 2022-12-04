@@ -17,7 +17,7 @@ func (User) Fields() []ent.Field {
 		field.String("username").Immutable().Unique(),
 		field.String("api_key"),
 		field.Time("created_at").Immutable().Default(time.Now()),
-		field.Time("updated_at").Default(time.Now()).UpdateDefault(time.Now()),
+		field.Time("updated_at").Default(time.Now()).UpdateDefault(time.Now),
 		field.String("role").Default("read_only"),
 		field.Bool("locked").Default(false),
 	}

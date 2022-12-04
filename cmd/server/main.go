@@ -1,8 +1,12 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"github.com/lbrictson/TinyMonitor/ent"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
 	"github.com/lbrictson/TinyMonitor/pkg/config"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -32,6 +36,16 @@ func main() {
 	default:
 		l.SetLevel(logrus.InfoLevel)
 	}
+	// Connect to DB
+	dsn := fmt.Sprintf("host=%s port=%d user=%v password=%v dbname=%v sslmode=%v", conf.DBHost, conf.DBPort, conf.DBUser, conf.DBPass, conf.DBName, conf.DBSSLMode)
+	dbClient, err := ent.Open("postgres", dsn)
+	if err != nil {
+		l.Fatalf("Failed to connect to DB: %v", err)
+	}
+	err = dbClient.Schema.Create(context.Background())
+	if err != nil {
+		l.Fatalf("Failed to perform migrations: %v", err)
+	}
 	s, err := api.NewServer(api.NewServerInput{
 		Port:     conf.Port,
 		AutoTLS:  conf.AutoTLS,
@@ -39,7 +53,7 @@ func main() {
 		Logger:   l,
 	})
 	if err != nil {
-		panic(err)
+		l.Fatalf("Failed to create server: %v", err)
 	}
 	s.Run()
 }
