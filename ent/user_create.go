@@ -88,6 +88,20 @@ func (uc *UserCreate) SetNillableLocked(b *bool) *UserCreate {
 	return uc
 }
 
+// SetLockedUntil sets the "locked_until" field.
+func (uc *UserCreate) SetLockedUntil(t time.Time) *UserCreate {
+	uc.mutation.SetLockedUntil(t)
+	return uc
+}
+
+// SetNillableLockedUntil sets the "locked_until" field if the given value is not nil.
+func (uc *UserCreate) SetNillableLockedUntil(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetLockedUntil(*t)
+	}
+	return uc
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uc *UserCreate) Mutation() *UserMutation {
 	return uc.mutation
@@ -253,6 +267,10 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := uc.mutation.Locked(); ok {
 		_spec.SetField(user.FieldLocked, field.TypeBool, value)
 		_node.Locked = value
+	}
+	if value, ok := uc.mutation.LockedUntil(); ok {
+		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
+		_node.LockedUntil = &value
 	}
 	return _node, _spec
 }

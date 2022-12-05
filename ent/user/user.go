@@ -23,6 +23,8 @@ const (
 	FieldRole = "role"
 	// FieldLocked holds the string denoting the locked field in the database.
 	FieldLocked = "locked"
+	// FieldLockedUntil holds the string denoting the locked_until field in the database.
+	FieldLockedUntil = "locked_until"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 )
@@ -36,6 +38,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldRole,
 	FieldLocked,
+	FieldLockedUntil,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).

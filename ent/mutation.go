@@ -39,6 +39,7 @@ type UserMutation struct {
 	updated_at    *time.Time
 	role          *string
 	locked        *bool
+	locked_until  *time.Time
 	clearedFields map[string]struct{}
 	done          bool
 	oldValue      func(context.Context) (*User, error)
@@ -359,6 +360,55 @@ func (m *UserMutation) ResetLocked() {
 	m.locked = nil
 }
 
+// SetLockedUntil sets the "locked_until" field.
+func (m *UserMutation) SetLockedUntil(t time.Time) {
+	m.locked_until = &t
+}
+
+// LockedUntil returns the value of the "locked_until" field in the mutation.
+func (m *UserMutation) LockedUntil() (r time.Time, exists bool) {
+	v := m.locked_until
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLockedUntil returns the old "locked_until" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldLockedUntil(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLockedUntil is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLockedUntil requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLockedUntil: %w", err)
+	}
+	return oldValue.LockedUntil, nil
+}
+
+// ClearLockedUntil clears the value of the "locked_until" field.
+func (m *UserMutation) ClearLockedUntil() {
+	m.locked_until = nil
+	m.clearedFields[user.FieldLockedUntil] = struct{}{}
+}
+
+// LockedUntilCleared returns if the "locked_until" field was cleared in this mutation.
+func (m *UserMutation) LockedUntilCleared() bool {
+	_, ok := m.clearedFields[user.FieldLockedUntil]
+	return ok
+}
+
+// ResetLockedUntil resets all changes to the "locked_until" field.
+func (m *UserMutation) ResetLockedUntil() {
+	m.locked_until = nil
+	delete(m.clearedFields, user.FieldLockedUntil)
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -378,7 +428,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 7)
 	if m.username != nil {
 		fields = append(fields, user.FieldUsername)
 	}
@@ -396,6 +446,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.locked != nil {
 		fields = append(fields, user.FieldLocked)
+	}
+	if m.locked_until != nil {
+		fields = append(fields, user.FieldLockedUntil)
 	}
 	return fields
 }
@@ -417,6 +470,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Role()
 	case user.FieldLocked:
 		return m.Locked()
+	case user.FieldLockedUntil:
+		return m.LockedUntil()
 	}
 	return nil, false
 }
@@ -438,6 +493,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldRole(ctx)
 	case user.FieldLocked:
 		return m.OldLocked(ctx)
+	case user.FieldLockedUntil:
+		return m.OldLockedUntil(ctx)
 	}
 	return nil, fmt.Errorf("unknown User field %s", name)
 }
@@ -489,6 +546,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetLocked(v)
 		return nil
+	case user.FieldLockedUntil:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLockedUntil(v)
+		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)
 }
@@ -518,7 +582,11 @@ func (m *UserMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *UserMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(user.FieldLockedUntil) {
+		fields = append(fields, user.FieldLockedUntil)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -531,6 +599,11 @@ func (m *UserMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *UserMutation) ClearField(name string) error {
+	switch name {
+	case user.FieldLockedUntil:
+		m.ClearLockedUntil()
+		return nil
+	}
 	return fmt.Errorf("unknown User nullable field %s", name)
 }
 
@@ -555,6 +628,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldLocked:
 		m.ResetLocked()
+		return nil
+	case user.FieldLockedUntil:
+		m.ResetLockedUntil()
 		return nil
 	}
 	return fmt.Errorf("unknown User field %s", name)

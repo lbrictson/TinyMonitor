@@ -68,6 +68,26 @@ func (uu *UserUpdate) SetNillableLocked(b *bool) *UserUpdate {
 	return uu
 }
 
+// SetLockedUntil sets the "locked_until" field.
+func (uu *UserUpdate) SetLockedUntil(t time.Time) *UserUpdate {
+	uu.mutation.SetLockedUntil(t)
+	return uu
+}
+
+// SetNillableLockedUntil sets the "locked_until" field if the given value is not nil.
+func (uu *UserUpdate) SetNillableLockedUntil(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetLockedUntil(*t)
+	}
+	return uu
+}
+
+// ClearLockedUntil clears the value of the "locked_until" field.
+func (uu *UserUpdate) ClearLockedUntil() *UserUpdate {
+	uu.mutation.ClearLockedUntil()
+	return uu
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
@@ -166,6 +186,12 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := uu.mutation.Locked(); ok {
 		_spec.SetField(user.FieldLocked, field.TypeBool, value)
 	}
+	if value, ok := uu.mutation.LockedUntil(); ok {
+		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
+	}
+	if uu.mutation.LockedUntilCleared() {
+		_spec.ClearField(user.FieldLockedUntil, field.TypeTime)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -222,6 +248,26 @@ func (uuo *UserUpdateOne) SetNillableLocked(b *bool) *UserUpdateOne {
 	if b != nil {
 		uuo.SetLocked(*b)
 	}
+	return uuo
+}
+
+// SetLockedUntil sets the "locked_until" field.
+func (uuo *UserUpdateOne) SetLockedUntil(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetLockedUntil(t)
+	return uuo
+}
+
+// SetNillableLockedUntil sets the "locked_until" field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableLockedUntil(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetLockedUntil(*t)
+	}
+	return uuo
+}
+
+// ClearLockedUntil clears the value of the "locked_until" field.
+func (uuo *UserUpdateOne) ClearLockedUntil() *UserUpdateOne {
+	uuo.mutation.ClearLockedUntil()
 	return uuo
 }
 
@@ -352,6 +398,12 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) 
 	}
 	if value, ok := uuo.mutation.Locked(); ok {
 		_spec.SetField(user.FieldLocked, field.TypeBool, value)
+	}
+	if value, ok := uuo.mutation.LockedUntil(); ok {
+		_spec.SetField(user.FieldLockedUntil, field.TypeTime, value)
+	}
+	if uuo.mutation.LockedUntilCleared() {
+		_spec.ClearField(user.FieldLockedUntil, field.TypeTime)
 	}
 	_node = &User{config: uuo.config}
 	_spec.Assign = _node.assignValues

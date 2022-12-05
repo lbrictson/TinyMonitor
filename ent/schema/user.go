@@ -20,6 +20,7 @@ func (User) Fields() []ent.Field {
 		field.Time("updated_at").Default(time.Now()).UpdateDefault(time.Now),
 		field.String("role").Default("read_only"),
 		field.Bool("locked").Default(false),
+		field.Time("locked_until").Optional().Nillable(),
 	}
 }
 

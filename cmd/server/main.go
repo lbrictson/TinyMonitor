@@ -1,11 +1,10 @@
 package main
 
 import (
-	"context"
-	"fmt"
-	"github.com/lbrictson/TinyMonitor/ent"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
 	"github.com/lbrictson/TinyMonitor/pkg/config"
+	"github.com/lbrictson/TinyMonitor/pkg/db"
+	"github.com/lbrictson/TinyMonitor/pkg/seeder"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
@@ -37,23 +36,26 @@ func main() {
 		l.SetLevel(logrus.InfoLevel)
 	}
 	// Connect to DB
-	dsn := fmt.Sprintf("host=%s port=%d user=%v password=%v dbname=%v sslmode=%v", conf.DBHost, conf.DBPort, conf.DBUser, conf.DBPass, conf.DBName, conf.DBSSLMode)
-	dbClient, err := ent.Open("postgres", dsn)
+	dbConn, err := db.NewDatabaseConnection(db.NewDatabaseConnectionInput{
+		InMemory: false,
+		Location: conf.DBLocation,
+	})
 	if err != nil {
-		l.Fatalf("Failed to connect to DB: %v", err)
-	}
-	err = dbClient.Schema.Create(context.Background())
-	if err != nil {
-		l.Fatalf("Failed to perform migrations: %v", err)
+		l.Fatalf("Error connecting to database: %v", err)
 	}
 	s, err := api.NewServer(api.NewServerInput{
-		Port:     conf.Port,
-		AutoTLS:  conf.AutoTLS,
-		Hostname: conf.Hostname,
-		Logger:   l,
+		Port:         conf.Port,
+		AutoTLS:      conf.AutoTLS,
+		Hostname:     conf.Hostname,
+		Logger:       l,
+		DBConnection: dbConn,
 	})
 	if err != nil {
 		l.Fatalf("Failed to create server: %v", err)
+	}
+	err = seeder.Run(dbConn)
+	if err != nil {
+		l.Fatalf("Failed to seed DB: %v", err)
 	}
 	s.Run()
 }

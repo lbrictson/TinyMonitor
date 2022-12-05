@@ -122,6 +122,13 @@ func Locked(v bool) predicate.User {
 	})
 }
 
+// LockedUntil applies equality check predicate on the "locked_until" field. It's identical to LockedUntilEQ.
+func LockedUntil(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldLockedUntil), v))
+	})
+}
+
 // UsernameEQ applies the EQ predicate on the "username" field.
 func UsernameEQ(v string) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
@@ -558,6 +565,84 @@ func LockedEQ(v bool) predicate.User {
 func LockedNEQ(v bool) predicate.User {
 	return predicate.User(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldLocked), v))
+	})
+}
+
+// LockedUntilEQ applies the EQ predicate on the "locked_until" field.
+func LockedUntilEQ(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldLockedUntil), v))
+	})
+}
+
+// LockedUntilNEQ applies the NEQ predicate on the "locked_until" field.
+func LockedUntilNEQ(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldLockedUntil), v))
+	})
+}
+
+// LockedUntilIn applies the In predicate on the "locked_until" field.
+func LockedUntilIn(vs ...time.Time) predicate.User {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldLockedUntil), v...))
+	})
+}
+
+// LockedUntilNotIn applies the NotIn predicate on the "locked_until" field.
+func LockedUntilNotIn(vs ...time.Time) predicate.User {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldLockedUntil), v...))
+	})
+}
+
+// LockedUntilGT applies the GT predicate on the "locked_until" field.
+func LockedUntilGT(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldLockedUntil), v))
+	})
+}
+
+// LockedUntilGTE applies the GTE predicate on the "locked_until" field.
+func LockedUntilGTE(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldLockedUntil), v))
+	})
+}
+
+// LockedUntilLT applies the LT predicate on the "locked_until" field.
+func LockedUntilLT(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldLockedUntil), v))
+	})
+}
+
+// LockedUntilLTE applies the LTE predicate on the "locked_until" field.
+func LockedUntilLTE(v time.Time) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldLockedUntil), v))
+	})
+}
+
+// LockedUntilIsNil applies the IsNil predicate on the "locked_until" field.
+func LockedUntilIsNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldLockedUntil)))
+	})
+}
+
+// LockedUntilNotNil applies the NotNil predicate on the "locked_until" field.
+func LockedUntilNotNil() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldLockedUntil)))
 	})
 }
 

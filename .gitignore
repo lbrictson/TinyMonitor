@@ -15,3 +15,4 @@
 # vendor/
 # Ignore jetbrains ide
 .idea
+tmp/

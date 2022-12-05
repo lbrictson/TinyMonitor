@@ -28,6 +28,8 @@ type User struct {
 	Role string `json:"role,omitempty"`
 	// Locked holds the value of the "locked" field.
 	Locked bool `json:"locked,omitempty"`
+	// LockedUntil holds the value of the "locked_until" field.
+	LockedUntil *time.Time `json:"locked_until,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -41,7 +43,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case user.FieldUsername, user.FieldAPIKey, user.FieldRole:
 			values[i] = new(sql.NullString)
-		case user.FieldCreatedAt, user.FieldUpdatedAt:
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldLockedUntil:
 			values[i] = new(sql.NullTime)
 		default:
 			return nil, fmt.Errorf("unexpected column %q for type User", columns[i])
@@ -100,6 +102,13 @@ func (u *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				u.Locked = value.Bool
 			}
+		case user.FieldLockedUntil:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field locked_until", values[i])
+			} else if value.Valid {
+				u.LockedUntil = new(time.Time)
+				*u.LockedUntil = value.Time
+			}
 		}
 	}
 	return nil
@@ -145,6 +154,11 @@ func (u *User) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("locked=")
 	builder.WriteString(fmt.Sprintf("%v", u.Locked))
+	builder.WriteString(", ")
+	if v := u.LockedUntil; v != nil {
+		builder.WriteString("locked_until=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }
