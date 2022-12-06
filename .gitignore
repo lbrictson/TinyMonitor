@@ -16,3 +16,4 @@
 # Ignore jetbrains ide
 .idea
 tmp/
+data/

@@ -8,10 +8,11 @@ type ErrorResponse struct {
 }
 
 func (s *Server) returnErrorResponse(c echo.Context, errorCode int, err error) error {
-	s.Logger.WithFields(map[string]interface{}{
+	s.logger.WithFields(map[string]interface{}{
 		"error":       err,
 		"status_code": errorCode,
 		"path":        c.Path(),
+		"method":      c.Request().Method,
 	}).Error("returning error response")
 	return c.JSON(errorCode, &ErrorResponse{
 		StatusCode: errorCode,
@@ -25,9 +26,10 @@ type SuccessResponse struct {
 }
 
 func (s *Server) returnSuccessResponse(c echo.Context, statusCode int, data interface{}) error {
-	s.Logger.WithFields(map[string]interface{}{
+	s.logger.WithFields(map[string]interface{}{
 		"status_code": statusCode,
 		"path":        c.Path(),
+		"method":      c.Request().Method,
 	}).Info("returning success response")
 	return c.JSON(statusCode, SuccessResponse{
 		StatusCode: statusCode,

@@ -20,7 +20,7 @@ func TestReadServerConfig(t *testing.T) {
 				AutoTLS:    false,
 				LogLevel:   "info",
 				LogFormat:  "text",
-				DBLocation: "tmp/",
+				DBLocation: "data/",
 			},
 			wantErr: false,
 		},
