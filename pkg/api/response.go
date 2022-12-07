@@ -18,11 +18,6 @@ func (s *Server) returnErrorResponse(c echo.Context, errorCode int, err error) e
 	})
 }
 
-type SuccessResponse struct {
-	StatusCode int         `json:"statusCode"`
-	Data       interface{} `json:"data"`
-}
-
 func (s *Server) returnSuccessResponse(c echo.Context, statusCode int, data interface{}) error {
 	s.logger.WithFields(map[string]interface{}{
 		"status_code": statusCode,
