@@ -31,28 +31,11 @@ func main() {
 		},
 	}
 	app := &cli.App{
-		Name:    "tiny-monitor",
-		Usage:   "The TinyMonitor CLI interface",
-		Version: "0.0.1",
-		Flags:   flags,
-		Commands: []*cli.Command{
-			{
-				Name:        "user",
-				Description: "Manage users",
-				Flags:       flags,
-				Subcommands: []*cli.Command{
-					{
-						Name:        "list",
-						Description: "List all users",
-						Usage:       "List all users",
-						Flags:       flags,
-						Action: func(context *cli.Context) error {
-							return c.ListUsers(context.String("output"))
-						},
-					},
-				},
-			},
-		},
+		Name:     "tiny-monitor",
+		Usage:    "The TinyMonitor CLI interface",
+		Version:  "0.0.1",
+		Flags:    flags,
+		Commands: []*cli.Command{c.LoadUserCLICommands()},
 	}
 	app.Flags = flags
 	if err := app.Run(os.Args); err != nil {

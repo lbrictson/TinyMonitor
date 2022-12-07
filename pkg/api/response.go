@@ -3,8 +3,7 @@ package api
 import "github.com/labstack/echo/v4"
 
 type ErrorResponse struct {
-	StatusCode int    `json:"statusCode"`
-	Message    string `json:"message"`
+	Error string `json:"error"`
 }
 
 func (s *Server) returnErrorResponse(c echo.Context, errorCode int, err error) error {
@@ -15,8 +14,7 @@ func (s *Server) returnErrorResponse(c echo.Context, errorCode int, err error) e
 		"method":      c.Request().Method,
 	}).Error("returning error response")
 	return c.JSON(errorCode, &ErrorResponse{
-		StatusCode: errorCode,
-		Message:    err.Error(),
+		Error: err.Error(),
 	})
 }
 
@@ -31,8 +29,5 @@ func (s *Server) returnSuccessResponse(c echo.Context, statusCode int, data inte
 		"path":        c.Path(),
 		"method":      c.Request().Method,
 	}).Info("returning success response")
-	return c.JSON(statusCode, SuccessResponse{
-		StatusCode: statusCode,
-		Data:       data,
-	})
+	return c.JSON(statusCode, data)
 }
