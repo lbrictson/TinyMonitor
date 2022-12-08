@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -63,6 +64,35 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 						return c.GetUser(&i, nil, context.String("output"))
 					}
 					return fmt.Errorf("must specify either username or id")
+				},
+			},
+			{
+				Name:        "create",
+				Description: "Create a user",
+				Usage:       "Create a user",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "username",
+						Aliases: []string{"u"},
+						Usage:   "The username of the user",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:  "role",
+						Usage: "The role of the user (read_only, write, admin)",
+						Aliases: []string{"r"},
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "output",
+						Aliases:  []string{"o"},
+						Value:    "text",
+						Usage:    "Output format. One of: text, json",
+						Required: false,
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.CreateUser(context.String("username"), context.String("role"))
 				},
 			},
 		},
@@ -129,4 +159,21 @@ func (c *APIClient) GetUser(id *int, username *string, outputformat string) erro
 		return errors.New("user not found")
 	}
 	return errors.New("id or username is required")
+}
+
+func (c *APIClient) CreateUser(username string, role string) error {
+	apiInput := api.CreateUserRequest{
+		Username: username,
+		Role:     role,
+	}
+	b, err := json.Marshal(&apiInput)
+	if err != nil {
+		return err
+	}
+	_, err = c.do("/api/v1/user", "POST", bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User %v created successfully\n", username)
+	return nil
 }
