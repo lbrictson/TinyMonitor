@@ -13,6 +13,8 @@ const (
 	FieldID = "id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldLastCheckedAt holds the string denoting the last_checked_at field in the database.
@@ -29,6 +31,8 @@ const (
 	FieldConfig = "config"
 	// FieldIntervalSeconds holds the string denoting the interval_seconds field in the database.
 	FieldIntervalSeconds = "interval_seconds"
+	// FieldPaused holds the string denoting the paused field in the database.
+	FieldPaused = "paused"
 	// Table holds the table name of the monitor in the database.
 	Table = "monitors"
 )
@@ -37,6 +41,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldName,
+	FieldDescription,
 	FieldStatus,
 	FieldLastCheckedAt,
 	FieldStatusLastChangedAt,
@@ -45,6 +50,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldConfig,
 	FieldIntervalSeconds,
+	FieldPaused,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -58,6 +64,8 @@ func ValidColumn(column string) bool {
 }
 
 var (
+	// DefaultDescription holds the default value on creation for the "description" field.
+	DefaultDescription string
 	// DefaultStatusLastChangedAt holds the default value on creation for the "status_last_changed_at" field.
 	DefaultStatusLastChangedAt func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -68,4 +76,6 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// DefaultIntervalSeconds holds the default value on creation for the "interval_seconds" field.
 	DefaultIntervalSeconds int
+	// DefaultPaused holds the default value on creation for the "paused" field.
+	DefaultPaused bool
 )

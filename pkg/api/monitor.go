@@ -14,6 +14,7 @@ import (
 type MonitorModel struct {
 	ID                        int                    `json:"id"`
 	Name                      string                 `json:"name"`
+	Description               string                 `json:"description"`
 	IntervalSeconds           int                    `json:"interval_seconds"`
 	Status                    string                 `json:"status"`
 	LastCheckedAt             *time.Time             `json:"last_checked_at"`
@@ -24,6 +25,7 @@ type MonitorModel struct {
 	UpdatedAt                 time.Time              `json:"updated_at"`
 	MonitorType               string                 `json:"monitor_type"`
 	Config                    map[string]interface{} `json:"config"`
+	Paused                    bool                   `json:"paused"`
 }
 
 func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
@@ -37,6 +39,7 @@ func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
 	return &MonitorModel{
 		ID:                        dbMonitor.ID,
 		Name:                      dbMonitor.Name,
+		Description:               dbMonitor.Description,
 		IntervalSeconds:           dbMonitor.IntervalSeconds,
 		Status:                    dbMonitor.Status,
 		LastCheckedAt:             dbMonitor.LastCheckedAt,
@@ -113,6 +116,7 @@ func (s *Server) getMonitor(c echo.Context) error {
 
 type CreateMonitorInput struct {
 	Name            string                 `json:"name"`
+	Description     string                 `json:"description"`
 	IntervalSeconds int                    `json:"interval_seconds"`
 	MonitorType     string                 `json:"monitor_type"`
 	Config          map[string]interface{} `json:"config"`
@@ -159,6 +163,7 @@ func (s *Server) createMonitor(c echo.Context) error {
 		IntervalSeconds: input.IntervalSeconds,
 		MonitorType:     input.MonitorType,
 		Config:          input.Config,
+		Description:     input.Description,
 	})
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
@@ -168,7 +173,9 @@ func (s *Server) createMonitor(c echo.Context) error {
 
 type UpdateMonitorInput struct {
 	IntervalSeconds *int                   `json:"interval_seconds"`
+	Paused          *bool                  `json:"paused"`
 	Config          map[string]interface{} `json:"config"`
+	Description     *string                `json:"description"`
 }
 
 func (c *UpdateMonitorInput) Validate() error {
@@ -215,6 +222,8 @@ func (s *Server) updateMonitor(c echo.Context) error {
 	monitor, err = s.dbConnection.UpdateMonitor(c.Request().Context(), idInt, db.UpdateMonitorInput{
 		IntervalSeconds: input.IntervalSeconds,
 		Config:          input.Config,
+		Paused:          input.Paused,
+		Description:     input.Description,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

@@ -12,6 +12,7 @@ var (
 	MonitorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "description", Type: field.TypeString, Default: ""},
 		{Name: "status", Type: field.TypeString},
 		{Name: "last_checked_at", Type: field.TypeTime, Nullable: true},
 		{Name: "status_last_changed_at", Type: field.TypeTime},
@@ -20,6 +21,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "config", Type: field.TypeJSON},
 		{Name: "interval_seconds", Type: field.TypeInt, Default: 60},
+		{Name: "paused", Type: field.TypeBool, Default: false},
 	}
 	// MonitorsTable holds the schema information for the "monitors" table.
 	MonitorsTable = &schema.Table{

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/lbrictson/TinyMonitor/ent"
 	"github.com/lbrictson/TinyMonitor/ent/user"
+	"strings"
 	"time"
 )
 
@@ -70,6 +71,9 @@ type CreateUserInput struct {
 func (i CreateUserInput) validate() error {
 	if i.Username == "" {
 		return errors.New("username is required")
+	}
+	if strings.Contains(i.Username, " ") {
+		return errors.New("username cannot contain spaces")
 	}
 	if i.APIKey == "" {
 		return errors.New("api_key is required")

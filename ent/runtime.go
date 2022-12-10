@@ -16,24 +16,32 @@ import (
 func init() {
 	monitorFields := schema.Monitor{}.Fields()
 	_ = monitorFields
+	// monitorDescDescription is the schema descriptor for description field.
+	monitorDescDescription := monitorFields[1].Descriptor()
+	// monitor.DefaultDescription holds the default value on creation for the description field.
+	monitor.DefaultDescription = monitorDescDescription.Default.(string)
 	// monitorDescStatusLastChangedAt is the schema descriptor for status_last_changed_at field.
-	monitorDescStatusLastChangedAt := monitorFields[3].Descriptor()
+	monitorDescStatusLastChangedAt := monitorFields[4].Descriptor()
 	// monitor.DefaultStatusLastChangedAt holds the default value on creation for the status_last_changed_at field.
 	monitor.DefaultStatusLastChangedAt = monitorDescStatusLastChangedAt.Default.(func() time.Time)
 	// monitorDescCreatedAt is the schema descriptor for created_at field.
-	monitorDescCreatedAt := monitorFields[5].Descriptor()
+	monitorDescCreatedAt := monitorFields[6].Descriptor()
 	// monitor.DefaultCreatedAt holds the default value on creation for the created_at field.
 	monitor.DefaultCreatedAt = monitorDescCreatedAt.Default.(func() time.Time)
 	// monitorDescUpdatedAt is the schema descriptor for updated_at field.
-	monitorDescUpdatedAt := monitorFields[6].Descriptor()
+	monitorDescUpdatedAt := monitorFields[7].Descriptor()
 	// monitor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	monitor.DefaultUpdatedAt = monitorDescUpdatedAt.Default.(func() time.Time)
 	// monitor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	monitor.UpdateDefaultUpdatedAt = monitorDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// monitorDescIntervalSeconds is the schema descriptor for interval_seconds field.
-	monitorDescIntervalSeconds := monitorFields[8].Descriptor()
+	monitorDescIntervalSeconds := monitorFields[9].Descriptor()
 	// monitor.DefaultIntervalSeconds holds the default value on creation for the interval_seconds field.
 	monitor.DefaultIntervalSeconds = monitorDescIntervalSeconds.Default.(int)
+	// monitorDescPaused is the schema descriptor for paused field.
+	monitorDescPaused := monitorFields[10].Descriptor()
+	// monitor.DefaultPaused holds the default value on creation for the paused field.
+	monitor.DefaultPaused = monitorDescPaused.Default.(bool)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

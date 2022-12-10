@@ -36,6 +36,7 @@ type MonitorMutation struct {
 	typ                    string
 	id                     *int
 	name                   *string
+	description            *string
 	status                 *string
 	last_checked_at        *time.Time
 	status_last_changed_at *time.Time
@@ -45,6 +46,7 @@ type MonitorMutation struct {
 	_config                *map[string]interface{}
 	interval_seconds       *int
 	addinterval_seconds    *int
+	paused                 *bool
 	clearedFields          map[string]struct{}
 	done                   bool
 	oldValue               func(context.Context) (*Monitor, error)
@@ -183,6 +185,42 @@ func (m *MonitorMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *MonitorMutation) ResetName() {
 	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *MonitorMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *MonitorMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *MonitorMutation) ResetDescription() {
+	m.description = nil
 }
 
 // SetStatus sets the "status" field.
@@ -506,6 +544,42 @@ func (m *MonitorMutation) ResetIntervalSeconds() {
 	m.addinterval_seconds = nil
 }
 
+// SetPaused sets the "paused" field.
+func (m *MonitorMutation) SetPaused(b bool) {
+	m.paused = &b
+}
+
+// Paused returns the value of the "paused" field in the mutation.
+func (m *MonitorMutation) Paused() (r bool, exists bool) {
+	v := m.paused
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPaused returns the old "paused" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldPaused(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPaused is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPaused requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPaused: %w", err)
+	}
+	return oldValue.Paused, nil
+}
+
+// ResetPaused resets all changes to the "paused" field.
+func (m *MonitorMutation) ResetPaused() {
+	m.paused = nil
+}
+
 // Where appends a list predicates to the MonitorMutation builder.
 func (m *MonitorMutation) Where(ps ...predicate.Monitor) {
 	m.predicates = append(m.predicates, ps...)
@@ -525,9 +599,12 @@ func (m *MonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MonitorMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 11)
 	if m.name != nil {
 		fields = append(fields, monitor.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, monitor.FieldDescription)
 	}
 	if m.status != nil {
 		fields = append(fields, monitor.FieldStatus)
@@ -553,6 +630,9 @@ func (m *MonitorMutation) Fields() []string {
 	if m.interval_seconds != nil {
 		fields = append(fields, monitor.FieldIntervalSeconds)
 	}
+	if m.paused != nil {
+		fields = append(fields, monitor.FieldPaused)
+	}
 	return fields
 }
 
@@ -563,6 +643,8 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case monitor.FieldName:
 		return m.Name()
+	case monitor.FieldDescription:
+		return m.Description()
 	case monitor.FieldStatus:
 		return m.Status()
 	case monitor.FieldLastCheckedAt:
@@ -579,6 +661,8 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.Config()
 	case monitor.FieldIntervalSeconds:
 		return m.IntervalSeconds()
+	case monitor.FieldPaused:
+		return m.Paused()
 	}
 	return nil, false
 }
@@ -590,6 +674,8 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 	switch name {
 	case monitor.FieldName:
 		return m.OldName(ctx)
+	case monitor.FieldDescription:
+		return m.OldDescription(ctx)
 	case monitor.FieldStatus:
 		return m.OldStatus(ctx)
 	case monitor.FieldLastCheckedAt:
@@ -606,6 +692,8 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldConfig(ctx)
 	case monitor.FieldIntervalSeconds:
 		return m.OldIntervalSeconds(ctx)
+	case monitor.FieldPaused:
+		return m.OldPaused(ctx)
 	}
 	return nil, fmt.Errorf("unknown Monitor field %s", name)
 }
@@ -621,6 +709,13 @@ func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case monitor.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
 		return nil
 	case monitor.FieldStatus:
 		v, ok := value.(string)
@@ -677,6 +772,13 @@ func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIntervalSeconds(v)
+		return nil
+	case monitor.FieldPaused:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPaused(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Monitor field %s", name)
@@ -754,6 +856,9 @@ func (m *MonitorMutation) ResetField(name string) error {
 	case monitor.FieldName:
 		m.ResetName()
 		return nil
+	case monitor.FieldDescription:
+		m.ResetDescription()
+		return nil
 	case monitor.FieldStatus:
 		m.ResetStatus()
 		return nil
@@ -777,6 +882,9 @@ func (m *MonitorMutation) ResetField(name string) error {
 		return nil
 	case monitor.FieldIntervalSeconds:
 		m.ResetIntervalSeconds()
+		return nil
+	case monitor.FieldPaused:
+		m.ResetPaused()
 		return nil
 	}
 	return fmt.Errorf("unknown Monitor field %s", name)

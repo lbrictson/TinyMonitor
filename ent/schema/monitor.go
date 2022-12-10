@@ -15,6 +15,7 @@ type Monitor struct {
 func (Monitor) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("name").Unique().Immutable(),
+		field.String("description").Default(""),
 		field.String("status"),
 		field.Time("last_checked_at").Nillable().Optional(),
 		field.Time("status_last_changed_at").Default(time.Now),
@@ -23,6 +24,7 @@ func (Monitor) Fields() []ent.Field {
 		field.Time("updated_at").Default(time.Now).UpdateDefault(time.Now),
 		field.JSON("config", map[string]interface{}{}),
 		field.Int("interval_seconds").Default(60),
+		field.Bool("paused").Default(false),
 	}
 }
 

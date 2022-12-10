@@ -1,7 +1,9 @@
 package client
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/gosuri/uitable"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
@@ -61,6 +63,37 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 						ops.Status = &s
 					}
 					return c.ListMonitors(ops, context.String("output"))
+				},
+			},
+			{
+				Name:        "edit",
+				Description: "edit monitor",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+					&cli.IntFlag{
+						Name:  "id",
+						Usage: "ID of monitor to edit",
+					},
+					&cli.StringFlag{
+						Name:  "name",
+						Usage: "Name of monitor to edit",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					if context.IsSet("id") {
+						id := context.Int("id")
+						return c.EditMonitor(&id, nil)
+					}
+					if context.IsSet("name") {
+						name := context.String("name")
+						return c.EditMonitor(nil, &name)
+					}
+					return errors.New("must specify either id or name")
 				},
 			},
 		},
@@ -149,4 +182,84 @@ func (c *APIClient) GetMonitor(id *int, name *string, outputformat string) error
 		return fmt.Errorf("monitor not found")
 	}
 	return fmt.Errorf("must specify either id or name")
+}
+
+func (c *APIClient) EditMonitor(id *int, name *string) error {
+	if id != nil {
+		data, err := c.do(fmt.Sprintf("/api/v1/monitor/%v", *id), "GET", nil)
+		if err != nil {
+			return err
+		}
+		monitor := api.MonitorModel{}
+		err = json.Unmarshal(data, &monitor)
+		if err != nil {
+			return err
+		}
+		editedData, err := editStructInEditor(monitor)
+		if err != nil {
+			return err
+		}
+		editedMonitor := api.MonitorModel{}
+		err = json.Unmarshal(editedData, &editedMonitor)
+		if err != nil {
+			return err
+		}
+		Updates := api.UpdateMonitorInput{
+			IntervalSeconds: &editedMonitor.IntervalSeconds,
+			Paused:          &editedMonitor.Paused,
+			Config:          editedMonitor.Config,
+			Description:     &editedMonitor.Description,
+		}
+		b, err := json.Marshal(Updates)
+		if err != nil {
+			return err
+		}
+		_, err = c.do(fmt.Sprintf("/api/v1/monitor/%v", *id), "PATCH", bytes.NewBuffer(b))
+		if err != nil {
+			return err
+		}
+		fmt.Println("monitor updated")
+		return nil
+	}
+	if name != nil {
+		monitorsAPIData, err := c.do("/api/v1/monitor", "GET", nil)
+		if err != nil {
+			return err
+		}
+		monitors := []api.MonitorModel{}
+		err = json.Unmarshal(monitorsAPIData, &monitors)
+		if err != nil {
+			return err
+		}
+		for _, x := range monitors {
+			if x.Name == *name {
+				editedData, err := editStructInEditor(x)
+				if err != nil {
+					return err
+				}
+				editedMonitor := api.MonitorModel{}
+				err = json.Unmarshal(editedData, &editedMonitor)
+				if err != nil {
+					return err
+				}
+				Updates := api.UpdateMonitorInput{
+					IntervalSeconds: &editedMonitor.IntervalSeconds,
+					Paused:          &editedMonitor.Paused,
+					Config:          editedMonitor.Config,
+				}
+				b, err := json.Marshal(Updates)
+				if err != nil {
+					return err
+				}
+				_, err = c.do(fmt.Sprintf("/api/v1/monitor/%v", x.ID), "PATCH", bytes.NewBuffer(b))
+				if err != nil {
+					return err
+				}
+				fmt.Println("monitor updated")
+				return nil
+			}
+		}
+		return fmt.Errorf("monitor not found")
+	}
+	return errors.New("must specify either id or name")
 }

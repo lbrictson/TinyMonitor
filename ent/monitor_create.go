@@ -26,6 +26,20 @@ func (mc *MonitorCreate) SetName(s string) *MonitorCreate {
 	return mc
 }
 
+// SetDescription sets the "description" field.
+func (mc *MonitorCreate) SetDescription(s string) *MonitorCreate {
+	mc.mutation.SetDescription(s)
+	return mc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableDescription(s *string) *MonitorCreate {
+	if s != nil {
+		mc.SetDescription(*s)
+	}
+	return mc
+}
+
 // SetStatus sets the "status" field.
 func (mc *MonitorCreate) SetStatus(s string) *MonitorCreate {
 	mc.mutation.SetStatus(s)
@@ -114,6 +128,20 @@ func (mc *MonitorCreate) SetNillableIntervalSeconds(i *int) *MonitorCreate {
 	return mc
 }
 
+// SetPaused sets the "paused" field.
+func (mc *MonitorCreate) SetPaused(b bool) *MonitorCreate {
+	mc.mutation.SetPaused(b)
+	return mc
+}
+
+// SetNillablePaused sets the "paused" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillablePaused(b *bool) *MonitorCreate {
+	if b != nil {
+		mc.SetPaused(*b)
+	}
+	return mc
+}
+
 // Mutation returns the MonitorMutation object of the builder.
 func (mc *MonitorCreate) Mutation() *MonitorMutation {
 	return mc.mutation
@@ -191,6 +219,10 @@ func (mc *MonitorCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (mc *MonitorCreate) defaults() {
+	if _, ok := mc.mutation.Description(); !ok {
+		v := monitor.DefaultDescription
+		mc.mutation.SetDescription(v)
+	}
 	if _, ok := mc.mutation.StatusLastChangedAt(); !ok {
 		v := monitor.DefaultStatusLastChangedAt()
 		mc.mutation.SetStatusLastChangedAt(v)
@@ -207,12 +239,19 @@ func (mc *MonitorCreate) defaults() {
 		v := monitor.DefaultIntervalSeconds
 		mc.mutation.SetIntervalSeconds(v)
 	}
+	if _, ok := mc.mutation.Paused(); !ok {
+		v := monitor.DefaultPaused
+		mc.mutation.SetPaused(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MonitorCreate) check() error {
 	if _, ok := mc.mutation.Name(); !ok {
 		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Monitor.name"`)}
+	}
+	if _, ok := mc.mutation.Description(); !ok {
+		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Monitor.description"`)}
 	}
 	if _, ok := mc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Monitor.status"`)}
@@ -234,6 +273,9 @@ func (mc *MonitorCreate) check() error {
 	}
 	if _, ok := mc.mutation.IntervalSeconds(); !ok {
 		return &ValidationError{Name: "interval_seconds", err: errors.New(`ent: missing required field "Monitor.interval_seconds"`)}
+	}
+	if _, ok := mc.mutation.Paused(); !ok {
+		return &ValidationError{Name: "paused", err: errors.New(`ent: missing required field "Monitor.paused"`)}
 	}
 	return nil
 }
@@ -266,6 +308,10 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 		_spec.SetField(monitor.FieldName, field.TypeString, value)
 		_node.Name = value
 	}
+	if value, ok := mc.mutation.Description(); ok {
+		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
+		_node.Description = value
+	}
 	if value, ok := mc.mutation.Status(); ok {
 		_spec.SetField(monitor.FieldStatus, field.TypeString, value)
 		_node.Status = value
@@ -297,6 +343,10 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.IntervalSeconds(); ok {
 		_spec.SetField(monitor.FieldIntervalSeconds, field.TypeInt, value)
 		_node.IntervalSeconds = value
+	}
+	if value, ok := mc.mutation.Paused(); ok {
+		_spec.SetField(monitor.FieldPaused, field.TypeBool, value)
+		_node.Paused = value
 	}
 	return _node, _spec
 }

@@ -28,6 +28,20 @@ func (mu *MonitorUpdate) Where(ps ...predicate.Monitor) *MonitorUpdate {
 	return mu
 }
 
+// SetDescription sets the "description" field.
+func (mu *MonitorUpdate) SetDescription(s string) *MonitorUpdate {
+	mu.mutation.SetDescription(s)
+	return mu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableDescription(s *string) *MonitorUpdate {
+	if s != nil {
+		mu.SetDescription(*s)
+	}
+	return mu
+}
+
 // SetStatus sets the "status" field.
 func (mu *MonitorUpdate) SetStatus(s string) *MonitorUpdate {
 	mu.mutation.SetStatus(s)
@@ -112,6 +126,20 @@ func (mu *MonitorUpdate) SetNillableIntervalSeconds(i *int) *MonitorUpdate {
 // AddIntervalSeconds adds i to the "interval_seconds" field.
 func (mu *MonitorUpdate) AddIntervalSeconds(i int) *MonitorUpdate {
 	mu.mutation.AddIntervalSeconds(i)
+	return mu
+}
+
+// SetPaused sets the "paused" field.
+func (mu *MonitorUpdate) SetPaused(b bool) *MonitorUpdate {
+	mu.mutation.SetPaused(b)
+	return mu
+}
+
+// SetNillablePaused sets the "paused" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillablePaused(b *bool) *MonitorUpdate {
+	if b != nil {
+		mu.SetPaused(*b)
+	}
 	return mu
 }
 
@@ -201,6 +229,9 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
+	if value, ok := mu.mutation.Description(); ok {
+		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
+	}
 	if value, ok := mu.mutation.Status(); ok {
 		_spec.SetField(monitor.FieldStatus, field.TypeString, value)
 	}
@@ -228,6 +259,9 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mu.mutation.AddedIntervalSeconds(); ok {
 		_spec.AddField(monitor.FieldIntervalSeconds, field.TypeInt, value)
 	}
+	if value, ok := mu.mutation.Paused(); ok {
+		_spec.SetField(monitor.FieldPaused, field.TypeBool, value)
+	}
 	if n, err = sqlgraph.UpdateNodes(ctx, mu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{monitor.Label}
@@ -245,6 +279,20 @@ type MonitorUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *MonitorMutation
+}
+
+// SetDescription sets the "description" field.
+func (muo *MonitorUpdateOne) SetDescription(s string) *MonitorUpdateOne {
+	muo.mutation.SetDescription(s)
+	return muo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableDescription(s *string) *MonitorUpdateOne {
+	if s != nil {
+		muo.SetDescription(*s)
+	}
+	return muo
 }
 
 // SetStatus sets the "status" field.
@@ -331,6 +379,20 @@ func (muo *MonitorUpdateOne) SetNillableIntervalSeconds(i *int) *MonitorUpdateOn
 // AddIntervalSeconds adds i to the "interval_seconds" field.
 func (muo *MonitorUpdateOne) AddIntervalSeconds(i int) *MonitorUpdateOne {
 	muo.mutation.AddIntervalSeconds(i)
+	return muo
+}
+
+// SetPaused sets the "paused" field.
+func (muo *MonitorUpdateOne) SetPaused(b bool) *MonitorUpdateOne {
+	muo.mutation.SetPaused(b)
+	return muo
+}
+
+// SetNillablePaused sets the "paused" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillablePaused(b *bool) *MonitorUpdateOne {
+	if b != nil {
+		muo.SetPaused(*b)
+	}
 	return muo
 }
 
@@ -450,6 +512,9 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 			}
 		}
 	}
+	if value, ok := muo.mutation.Description(); ok {
+		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
+	}
 	if value, ok := muo.mutation.Status(); ok {
 		_spec.SetField(monitor.FieldStatus, field.TypeString, value)
 	}
@@ -476,6 +541,9 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 	}
 	if value, ok := muo.mutation.AddedIntervalSeconds(); ok {
 		_spec.AddField(monitor.FieldIntervalSeconds, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.Paused(); ok {
+		_spec.SetField(monitor.FieldPaused, field.TypeBool, value)
 	}
 	_node = &Monitor{config: muo.config}
 	_spec.Assign = _node.assignValues

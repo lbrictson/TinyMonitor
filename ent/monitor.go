@@ -19,6 +19,8 @@ type Monitor struct {
 	ID int `json:"id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
+	// Description holds the value of the "description" field.
+	Description string `json:"description,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// LastCheckedAt holds the value of the "last_checked_at" field.
@@ -35,6 +37,8 @@ type Monitor struct {
 	Config map[string]interface{} `json:"config,omitempty"`
 	// IntervalSeconds holds the value of the "interval_seconds" field.
 	IntervalSeconds int `json:"interval_seconds,omitempty"`
+	// Paused holds the value of the "paused" field.
+	Paused bool `json:"paused,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -44,9 +48,11 @@ func (*Monitor) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case monitor.FieldConfig:
 			values[i] = new([]byte)
+		case monitor.FieldPaused:
+			values[i] = new(sql.NullBool)
 		case monitor.FieldID, monitor.FieldIntervalSeconds:
 			values[i] = new(sql.NullInt64)
-		case monitor.FieldName, monitor.FieldStatus, monitor.FieldMonitorType:
+		case monitor.FieldName, monitor.FieldDescription, monitor.FieldStatus, monitor.FieldMonitorType:
 			values[i] = new(sql.NullString)
 		case monitor.FieldLastCheckedAt, monitor.FieldStatusLastChangedAt, monitor.FieldCreatedAt, monitor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -76,6 +82,12 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
 			} else if value.Valid {
 				m.Name = value.String
+			}
+		case monitor.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				m.Description = value.String
 			}
 		case monitor.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -128,6 +140,12 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				m.IntervalSeconds = int(value.Int64)
 			}
+		case monitor.FieldPaused:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field paused", values[i])
+			} else if value.Valid {
+				m.Paused = value.Bool
+			}
 		}
 	}
 	return nil
@@ -159,6 +177,9 @@ func (m *Monitor) String() string {
 	builder.WriteString("name=")
 	builder.WriteString(m.Name)
 	builder.WriteString(", ")
+	builder.WriteString("description=")
+	builder.WriteString(m.Description)
+	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(m.Status)
 	builder.WriteString(", ")
@@ -184,6 +205,9 @@ func (m *Monitor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("interval_seconds=")
 	builder.WriteString(fmt.Sprintf("%v", m.IntervalSeconds))
+	builder.WriteString(", ")
+	builder.WriteString("paused=")
+	builder.WriteString(fmt.Sprintf("%v", m.Paused))
 	builder.WriteByte(')')
 	return builder.String()
 }
