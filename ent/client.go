@@ -10,6 +10,7 @@ import (
 
 	"github.com/lbrictson/TinyMonitor/ent/migrate"
 
+	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -21,6 +22,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Monitor is the client for interacting with the Monitor builders.
+	Monitor *MonitorClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -36,6 +39,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Monitor = NewMonitorClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -68,9 +72,10 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Monitor: NewMonitorClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
@@ -88,16 +93,17 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:     ctx,
+		config:  cfg,
+		Monitor: NewMonitorClient(cfg),
+		User:    NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Monitor.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -119,7 +125,98 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Monitor.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// MonitorClient is a client for the Monitor schema.
+type MonitorClient struct {
+	config
+}
+
+// NewMonitorClient returns a client for the Monitor from the given config.
+func NewMonitorClient(c config) *MonitorClient {
+	return &MonitorClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `monitor.Hooks(f(g(h())))`.
+func (c *MonitorClient) Use(hooks ...Hook) {
+	c.hooks.Monitor = append(c.hooks.Monitor, hooks...)
+}
+
+// Create returns a builder for creating a Monitor entity.
+func (c *MonitorClient) Create() *MonitorCreate {
+	mutation := newMonitorMutation(c.config, OpCreate)
+	return &MonitorCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Monitor entities.
+func (c *MonitorClient) CreateBulk(builders ...*MonitorCreate) *MonitorCreateBulk {
+	return &MonitorCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Monitor.
+func (c *MonitorClient) Update() *MonitorUpdate {
+	mutation := newMonitorMutation(c.config, OpUpdate)
+	return &MonitorUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *MonitorClient) UpdateOne(m *Monitor) *MonitorUpdateOne {
+	mutation := newMonitorMutation(c.config, OpUpdateOne, withMonitor(m))
+	return &MonitorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *MonitorClient) UpdateOneID(id int) *MonitorUpdateOne {
+	mutation := newMonitorMutation(c.config, OpUpdateOne, withMonitorID(id))
+	return &MonitorUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Monitor.
+func (c *MonitorClient) Delete() *MonitorDelete {
+	mutation := newMonitorMutation(c.config, OpDelete)
+	return &MonitorDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *MonitorClient) DeleteOne(m *Monitor) *MonitorDeleteOne {
+	return c.DeleteOneID(m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *MonitorClient) DeleteOneID(id int) *MonitorDeleteOne {
+	builder := c.Delete().Where(monitor.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &MonitorDeleteOne{builder}
+}
+
+// Query returns a query builder for Monitor.
+func (c *MonitorClient) Query() *MonitorQuery {
+	return &MonitorQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Monitor entity by its id.
+func (c *MonitorClient) Get(ctx context.Context, id int) (*Monitor, error) {
+	return c.Query().Where(monitor.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *MonitorClient) GetX(ctx context.Context, id int) *Monitor {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *MonitorClient) Hooks() []Hook {
+	return c.hooks.Monitor
 }
 
 // UserClient is a client for the User schema.

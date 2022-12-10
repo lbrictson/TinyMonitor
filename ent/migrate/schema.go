@@ -8,6 +8,25 @@ import (
 )
 
 var (
+	// MonitorsColumns holds the columns for the "monitors" table.
+	MonitorsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "name", Type: field.TypeString, Unique: true},
+		{Name: "status", Type: field.TypeString},
+		{Name: "last_checked_at", Type: field.TypeTime, Nullable: true},
+		{Name: "status_last_changed_at", Type: field.TypeTime},
+		{Name: "monitor_type", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "config", Type: field.TypeJSON},
+		{Name: "interval_seconds", Type: field.TypeInt, Default: 60},
+	}
+	// MonitorsTable holds the schema information for the "monitors" table.
+	MonitorsTable = &schema.Table{
+		Name:       "monitors",
+		Columns:    MonitorsColumns,
+		PrimaryKey: []*schema.Column{MonitorsColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -27,6 +46,7 @@ var (
 	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		MonitorsTable,
 		UsersTable,
 	}
 )

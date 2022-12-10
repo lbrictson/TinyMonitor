@@ -7,6 +7,7 @@ import (
 	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
+	"os"
 	"time"
 )
 
@@ -57,13 +58,26 @@ func (s *Server) Run() {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+	// Monitor API
+	e.GET("/api/v1/monitor", s.listMonitors)
+	e.GET("/api/v1/monitor/:id", s.getMonitor)
+	e.POST("/api/v1/monitor", s.createMonitor)
+	e.PATCH("/api/v1/monitor/:id", s.updateMonitor)
+
 	// User API
 	e.GET("/api/v1/user/:id", s.getUser, s.userAuthRequired)
 	e.GET("/api/v1/user", s.listUsers, s.userAuthRequired)
 	e.DELETE("/api/v1/user/:id", s.deleteUser, s.userAuthRequired, s.adminRequired)
 	e.POST("/api/v1/user", s.createUser, s.userAuthRequired, s.adminRequired)
 	e.PATCH("/api/v1/user/:id", s.updateUser, s.userAuthRequired, s.adminRequired)
+	// Utility routes
+	e.GET("/api/v1/health", func(c echo.Context) error {
+		return c.String(200, "OK")
+	})
 	s.logger.Infof("Starting server on port %d", s.port)
+	if os.Getenv("TINYMONITOR_TESTING") == "true" {
+		s.logger.Warn("Running in testing mode")
+	}
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", s.port)))
 	return
 }

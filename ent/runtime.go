@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/schema"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 )
@@ -13,6 +14,26 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	monitorFields := schema.Monitor{}.Fields()
+	_ = monitorFields
+	// monitorDescStatusLastChangedAt is the schema descriptor for status_last_changed_at field.
+	monitorDescStatusLastChangedAt := monitorFields[3].Descriptor()
+	// monitor.DefaultStatusLastChangedAt holds the default value on creation for the status_last_changed_at field.
+	monitor.DefaultStatusLastChangedAt = monitorDescStatusLastChangedAt.Default.(func() time.Time)
+	// monitorDescCreatedAt is the schema descriptor for created_at field.
+	monitorDescCreatedAt := monitorFields[5].Descriptor()
+	// monitor.DefaultCreatedAt holds the default value on creation for the created_at field.
+	monitor.DefaultCreatedAt = monitorDescCreatedAt.Default.(func() time.Time)
+	// monitorDescUpdatedAt is the schema descriptor for updated_at field.
+	monitorDescUpdatedAt := monitorFields[6].Descriptor()
+	// monitor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	monitor.DefaultUpdatedAt = monitorDescUpdatedAt.Default.(func() time.Time)
+	// monitor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	monitor.UpdateDefaultUpdatedAt = monitorDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// monitorDescIntervalSeconds is the schema descriptor for interval_seconds field.
+	monitorDescIntervalSeconds := monitorFields[8].Descriptor()
+	// monitor.DefaultIntervalSeconds holds the default value on creation for the interval_seconds field.
+	monitor.DefaultIntervalSeconds = monitorDescIntervalSeconds.Default.(int)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.

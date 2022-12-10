@@ -97,6 +97,10 @@ type CreateUserRequest struct {
 	Role     string `json:"role"`
 }
 
+type CreateUserResponse struct {
+	APIKey string `json:"api_key"`
+}
+
 func (s *Server) createUser(c echo.Context) error {
 	// Get the user from the request
 	var user CreateUserRequest
@@ -118,7 +122,7 @@ func (s *Server) createUser(c echo.Context) error {
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
-	return s.returnSuccessResponse(c, http.StatusOK, convertDBUserToAPIUser(newUser))
+	return s.returnSuccessResponse(c, http.StatusOK, CreateUserResponse{APIKey: newUser.APIKey})
 }
 
 type UpdateUserRequest struct {

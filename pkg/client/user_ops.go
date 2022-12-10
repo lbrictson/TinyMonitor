@@ -67,6 +67,80 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 				},
 			},
 			{
+				Name:        "edit",
+				Description: "Edit a user",
+				Usage:       "Edit a user",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "username",
+						Aliases: []string{"u"},
+						Usage:   "The username of the user",
+					},
+					&cli.IntFlag{
+						Name:  "id",
+						Usage: "The id of the user",
+					},
+					&cli.StringFlag{
+						Name:    "role",
+						Aliases: []string{"r"},
+						Usage:   "The role of the user",
+						Required: true,
+					},
+					&cli.StringFlag{
+						Name:     "output",
+						Aliases:  []string{"o"},
+						Value:    "text",
+						Usage:    "Output format. One of: text, json",
+						Required: false,
+					},
+				},
+				Action: func(context *cli.Context) error {
+					if context.IsSet("username") {
+						u := context.String("username")
+						return c.ChangeUserRole(nil, &u, context.String("role"), context.String("output"))
+					}
+					if context.IsSet("id") {
+						i := context.Int("id")
+						return c.ChangeUserRole(&i, nil, context.String("role"),  context.String("output"))
+					}
+					return fmt.Errorf("must specify either username or id")
+				},
+			},
+			{
+				Name:        "delete",
+				Description: "Delete a user",
+				Usage:       "Delete a user",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "username",
+						Aliases: []string{"u"},
+						Usage:   "The username of the user",
+					},
+					&cli.IntFlag{
+						Name:  "id",
+						Usage: "The id of the user",
+					},
+					&cli.StringFlag{
+						Name:     "output",
+						Aliases:  []string{"o"},
+						Value:    "text",
+						Usage:    "Output format. One of: text, json",
+						Required: false,
+					},
+				},
+				Action: func(context *cli.Context) error {
+					if context.IsSet("username") {
+						u := context.String("username")
+						return c.DeleteUser(0, u, context.String("output"))
+					}
+					if context.IsSet("id") {
+						i := context.Int("id")
+						return c.DeleteUser(i, "", context.String("output"))
+					}
+					return fmt.Errorf("must specify either username or id")
+				},
+			},
+			{
 				Name:        "create",
 				Description: "Create a user",
 				Usage:       "Create a user",
@@ -92,7 +166,7 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 					},
 				},
 				Action: func(context *cli.Context) error {
-					return c.CreateUser(context.String("username"), context.String("role"))
+					return c.CreateUser(context.String("username"), context.String("role"), context.String("output"))
 				},
 			},
 		},
@@ -161,7 +235,7 @@ func (c *APIClient) GetUser(id *int, username *string, outputformat string) erro
 	return errors.New("id or username is required")
 }
 
-func (c *APIClient) CreateUser(username string, role string) error {
+func (c *APIClient) CreateUser(username string, role string, outputformat string) error {
 	apiInput := api.CreateUserRequest{
 		Username: username,
 		Role:     role,
@@ -170,10 +244,97 @@ func (c *APIClient) CreateUser(username string, role string) error {
 	if err != nil {
 		return err
 	}
-	_, err = c.do("/api/v1/user", "POST", bytes.NewBuffer(b))
+	resp, err := c.do("/api/v1/user", "POST", bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("User %v created successfully\n", username)
+	data := api.CreateUserResponse{}
+	err = json.Unmarshal(resp, &data)
+	if err != nil {
+		return err
+	}
+	if outputformat == "json" {
+		return emitJSON(data)
+	}
+	fmt.Printf("User %v created successfully, API key is: %v\n", username, data.APIKey)
+	return nil
+}
+
+func (c *APIClient) DeleteUser(id int, username string, outputformat string) error {
+	if id != 0 && username != "" {
+		return errors.New("only id or username can be provided, not both")
+	}
+	if username != "" {
+		found := false
+		usersAPIData, err := c.do("/api/v1/user", "GET", nil)
+		if err != nil {
+			return err
+		}
+		users := []api.UserModel{}
+		err = json.Unmarshal(usersAPIData, &users)
+		if err != nil {
+			return err
+		}
+		for _, x := range users {
+			if x.Username == username {
+				id = x.ID
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.New("user not found")
+		}
+	}
+	_, err := c.do(fmt.Sprintf("/api/v1/user/%v", id), "DELETE", nil)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User %v deleted successfully\n", id)
+	return nil
+}
+
+func (c *APIClient) ChangeUserRole(id *int, username *string, newRole string, outputformat string) error {
+	if username != nil && id != nil {
+		return errors.New("only id or username can be provided, not both")
+	}
+	if username != nil {
+		found := false
+		usersAPIData, err := c.do("/api/v1/user", "GET", nil)
+		if err != nil {
+			return err
+		}
+		users := []api.UserModel{}
+		err = json.Unmarshal(usersAPIData, &users)
+		if err != nil {
+			return err
+		}
+		for _, x := range users {
+			if x.Username == *username {
+				id = &x.ID
+				found = true
+				break
+			}
+		}
+		if !found {
+			return errors.New("user not found")
+		}
+	}
+	if id == nil {
+		return errors.New("id or username is required")
+	}
+	apiInput := api.UpdateUserRequest{
+		Role:      &newRole,
+		LockedOut: nil,
+	}
+	b, err := json.Marshal(&apiInput)
+	if err != nil {
+		return err
+	}
+	_, err = c.do(fmt.Sprintf("/api/v1/user/%v", *id), "PATCH", bytes.NewBuffer(b))
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User %v role changed successfully to %v\n", *id, newRole)
 	return nil
 }
