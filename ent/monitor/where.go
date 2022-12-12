@@ -10,28 +10,28 @@ import (
 )
 
 // ID filters vertices based on their ID field.
-func ID(id int) predicate.Monitor {
+func ID(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
 	})
 }
 
 // IDEQ applies the EQ predicate on the ID field.
-func IDEQ(id int) predicate.Monitor {
+func IDEQ(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldID), id))
 	})
 }
 
 // IDNEQ applies the NEQ predicate on the ID field.
-func IDNEQ(id int) predicate.Monitor {
+func IDNEQ(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldID), id))
 	})
 }
 
 // IDIn applies the In predicate on the ID field.
-func IDIn(ids ...int) predicate.Monitor {
+func IDIn(ids ...string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		v := make([]any, len(ids))
 		for i := range v {
@@ -42,7 +42,7 @@ func IDIn(ids ...int) predicate.Monitor {
 }
 
 // IDNotIn applies the NotIn predicate on the ID field.
-func IDNotIn(ids ...int) predicate.Monitor {
+func IDNotIn(ids ...string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		v := make([]any, len(ids))
 		for i := range v {
@@ -53,37 +53,30 @@ func IDNotIn(ids ...int) predicate.Monitor {
 }
 
 // IDGT applies the GT predicate on the ID field.
-func IDGT(id int) predicate.Monitor {
+func IDGT(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.GT(s.C(FieldID), id))
 	})
 }
 
 // IDGTE applies the GTE predicate on the ID field.
-func IDGTE(id int) predicate.Monitor {
+func IDGTE(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.GTE(s.C(FieldID), id))
 	})
 }
 
 // IDLT applies the LT predicate on the ID field.
-func IDLT(id int) predicate.Monitor {
+func IDLT(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.LT(s.C(FieldID), id))
 	})
 }
 
 // IDLTE applies the LTE predicate on the ID field.
-func IDLTE(id int) predicate.Monitor {
+func IDLTE(id string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldID), id))
-	})
-}
-
-// Name applies equality check predicate on the "name" field. It's identical to NameEQ.
-func Name(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldName), v))
 	})
 }
 
@@ -150,102 +143,24 @@ func Paused(v bool) predicate.Monitor {
 	})
 }
 
-// NameEQ applies the EQ predicate on the "name" field.
-func NameEQ(v string) predicate.Monitor {
+// FailureCount applies equality check predicate on the "failure_count" field. It's identical to FailureCountEQ.
+func FailureCount(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldName), v))
+		s.Where(sql.EQ(s.C(FieldFailureCount), v))
 	})
 }
 
-// NameNEQ applies the NEQ predicate on the "name" field.
-func NameNEQ(v string) predicate.Monitor {
+// SuccessThreshold applies equality check predicate on the "success_threshold" field. It's identical to SuccessThresholdEQ.
+func SuccessThreshold(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldName), v))
+		s.Where(sql.EQ(s.C(FieldSuccessThreshold), v))
 	})
 }
 
-// NameIn applies the In predicate on the "name" field.
-func NameIn(vs ...string) predicate.Monitor {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
+// FailureThreshold applies equality check predicate on the "failure_threshold" field. It's identical to FailureThresholdEQ.
+func FailureThreshold(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.In(s.C(FieldName), v...))
-	})
-}
-
-// NameNotIn applies the NotIn predicate on the "name" field.
-func NameNotIn(vs ...string) predicate.Monitor {
-	v := make([]any, len(vs))
-	for i := range v {
-		v[i] = vs[i]
-	}
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.NotIn(s.C(FieldName), v...))
-	})
-}
-
-// NameGT applies the GT predicate on the "name" field.
-func NameGT(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.GT(s.C(FieldName), v))
-	})
-}
-
-// NameGTE applies the GTE predicate on the "name" field.
-func NameGTE(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.GTE(s.C(FieldName), v))
-	})
-}
-
-// NameLT applies the LT predicate on the "name" field.
-func NameLT(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.LT(s.C(FieldName), v))
-	})
-}
-
-// NameLTE applies the LTE predicate on the "name" field.
-func NameLTE(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.LTE(s.C(FieldName), v))
-	})
-}
-
-// NameContains applies the Contains predicate on the "name" field.
-func NameContains(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.Contains(s.C(FieldName), v))
-	})
-}
-
-// NameHasPrefix applies the HasPrefix predicate on the "name" field.
-func NameHasPrefix(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.HasPrefix(s.C(FieldName), v))
-	})
-}
-
-// NameHasSuffix applies the HasSuffix predicate on the "name" field.
-func NameHasSuffix(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.HasSuffix(s.C(FieldName), v))
-	})
-}
-
-// NameEqualFold applies the EqualFold predicate on the "name" field.
-func NameEqualFold(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.EqualFold(s.C(FieldName), v))
-	})
-}
-
-// NameContainsFold applies the ContainsFold predicate on the "name" field.
-func NameContainsFold(v string) predicate.Monitor {
-	return predicate.Monitor(func(s *sql.Selector) {
-		s.Where(sql.ContainsFold(s.C(FieldName), v))
+		s.Where(sql.EQ(s.C(FieldFailureThreshold), v))
 	})
 }
 
@@ -891,6 +806,198 @@ func PausedEQ(v bool) predicate.Monitor {
 func PausedNEQ(v bool) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.NEQ(s.C(FieldPaused), v))
+	})
+}
+
+// FailureCountEQ applies the EQ predicate on the "failure_count" field.
+func FailureCountEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldFailureCount), v))
+	})
+}
+
+// FailureCountNEQ applies the NEQ predicate on the "failure_count" field.
+func FailureCountNEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldFailureCount), v))
+	})
+}
+
+// FailureCountIn applies the In predicate on the "failure_count" field.
+func FailureCountIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldFailureCount), v...))
+	})
+}
+
+// FailureCountNotIn applies the NotIn predicate on the "failure_count" field.
+func FailureCountNotIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldFailureCount), v...))
+	})
+}
+
+// FailureCountGT applies the GT predicate on the "failure_count" field.
+func FailureCountGT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldFailureCount), v))
+	})
+}
+
+// FailureCountGTE applies the GTE predicate on the "failure_count" field.
+func FailureCountGTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldFailureCount), v))
+	})
+}
+
+// FailureCountLT applies the LT predicate on the "failure_count" field.
+func FailureCountLT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldFailureCount), v))
+	})
+}
+
+// FailureCountLTE applies the LTE predicate on the "failure_count" field.
+func FailureCountLTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldFailureCount), v))
+	})
+}
+
+// SuccessThresholdEQ applies the EQ predicate on the "success_threshold" field.
+func SuccessThresholdEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSuccessThreshold), v))
+	})
+}
+
+// SuccessThresholdNEQ applies the NEQ predicate on the "success_threshold" field.
+func SuccessThresholdNEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldSuccessThreshold), v))
+	})
+}
+
+// SuccessThresholdIn applies the In predicate on the "success_threshold" field.
+func SuccessThresholdIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldSuccessThreshold), v...))
+	})
+}
+
+// SuccessThresholdNotIn applies the NotIn predicate on the "success_threshold" field.
+func SuccessThresholdNotIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldSuccessThreshold), v...))
+	})
+}
+
+// SuccessThresholdGT applies the GT predicate on the "success_threshold" field.
+func SuccessThresholdGT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldSuccessThreshold), v))
+	})
+}
+
+// SuccessThresholdGTE applies the GTE predicate on the "success_threshold" field.
+func SuccessThresholdGTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldSuccessThreshold), v))
+	})
+}
+
+// SuccessThresholdLT applies the LT predicate on the "success_threshold" field.
+func SuccessThresholdLT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldSuccessThreshold), v))
+	})
+}
+
+// SuccessThresholdLTE applies the LTE predicate on the "success_threshold" field.
+func SuccessThresholdLTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldSuccessThreshold), v))
+	})
+}
+
+// FailureThresholdEQ applies the EQ predicate on the "failure_threshold" field.
+func FailureThresholdEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// FailureThresholdNEQ applies the NEQ predicate on the "failure_threshold" field.
+func FailureThresholdNEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// FailureThresholdIn applies the In predicate on the "failure_threshold" field.
+func FailureThresholdIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldFailureThreshold), v...))
+	})
+}
+
+// FailureThresholdNotIn applies the NotIn predicate on the "failure_threshold" field.
+func FailureThresholdNotIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldFailureThreshold), v...))
+	})
+}
+
+// FailureThresholdGT applies the GT predicate on the "failure_threshold" field.
+func FailureThresholdGT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// FailureThresholdGTE applies the GTE predicate on the "failure_threshold" field.
+func FailureThresholdGTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// FailureThresholdLT applies the LT predicate on the "failure_threshold" field.
+func FailureThresholdLT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// FailureThresholdLTE applies the LTE predicate on the "failure_threshold" field.
+func FailureThresholdLTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldFailureThreshold), v))
 	})
 }
 

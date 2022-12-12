@@ -11,8 +11,6 @@ const (
 	Label = "monitor"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldName holds the string denoting the name field in the database.
-	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// FieldStatus holds the string denoting the status field in the database.
@@ -33,6 +31,12 @@ const (
 	FieldIntervalSeconds = "interval_seconds"
 	// FieldPaused holds the string denoting the paused field in the database.
 	FieldPaused = "paused"
+	// FieldFailureCount holds the string denoting the failure_count field in the database.
+	FieldFailureCount = "failure_count"
+	// FieldSuccessThreshold holds the string denoting the success_threshold field in the database.
+	FieldSuccessThreshold = "success_threshold"
+	// FieldFailureThreshold holds the string denoting the failure_threshold field in the database.
+	FieldFailureThreshold = "failure_threshold"
 	// Table holds the table name of the monitor in the database.
 	Table = "monitors"
 )
@@ -40,7 +44,6 @@ const (
 // Columns holds all SQL columns for monitor fields.
 var Columns = []string{
 	FieldID,
-	FieldName,
 	FieldDescription,
 	FieldStatus,
 	FieldLastCheckedAt,
@@ -51,6 +54,9 @@ var Columns = []string{
 	FieldConfig,
 	FieldIntervalSeconds,
 	FieldPaused,
+	FieldFailureCount,
+	FieldSuccessThreshold,
+	FieldFailureThreshold,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -78,4 +84,12 @@ var (
 	DefaultIntervalSeconds int
 	// DefaultPaused holds the default value on creation for the "paused" field.
 	DefaultPaused bool
+	// DefaultFailureCount holds the default value on creation for the "failure_count" field.
+	DefaultFailureCount int
+	// DefaultSuccessThreshold holds the default value on creation for the "success_threshold" field.
+	DefaultSuccessThreshold int
+	// DefaultFailureThreshold holds the default value on creation for the "failure_threshold" field.
+	DefaultFailureThreshold int
+	// IDValidator is a validator for the "id" field. It is called by the builders before save.
+	IDValidator func(string) error
 )

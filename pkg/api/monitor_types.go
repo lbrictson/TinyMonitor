@@ -6,16 +6,16 @@ import (
 )
 
 type HTTPMonitorConfig struct {
-	URL                    string `json:"url"`
-	Method                 string `json:"method"`
-	BodyContains           string `json:"expected_body_contains"`
-	FailureThreshold       int    `json:"failure_threshold"`
-	SuccessThreshold       int    `json:"success_threshold"`
-	TimeoutMS              int    `json:"timeout_ms"`
-	DoubleCheckFailures    bool   `json:"double_check_failures"`
-	InspectResponseForText string `json:"inspect_response_for_text"`
-	ExpectResponseCode     int    `json:"expect_response_code"`
-	SkipTLSValidation      bool   `json:"skip_tls_validation"`
+	URL                    string            `json:"url"`
+	Method                 string            `json:"method"`
+	BodyContains           string            `json:"expected_body_contains"`
+	TimeoutMS              int               `json:"timeout_ms"`
+	DoubleCheckFailures    bool              `json:"double_check_failures"`
+	InspectResponseForText string            `json:"inspect_response_for_text"`
+	ExpectResponseCode     int               `json:"expect_response_code"`
+	SkipTLSValidation      bool              `json:"skip_tls_validation"`
+	RequestBody            string            `json:"request_body"`
+	Headers                map[string]string `json:"headers"`
 }
 
 func ConvertHTTPMonitorConfigToGeneric(config HTTPMonitorConfig) map[string]interface{} {
@@ -23,13 +23,13 @@ func ConvertHTTPMonitorConfigToGeneric(config HTTPMonitorConfig) map[string]inte
 		"url":                       config.URL,
 		"method":                    config.Method,
 		"expected_body_contains":    config.BodyContains,
-		"failure_threshold":         config.FailureThreshold,
-		"success_threshold":         config.SuccessThreshold,
 		"timeout_ms":                config.TimeoutMS,
 		"double_check_failures":     config.DoubleCheckFailures,
 		"inspect_response_for_text": config.InspectResponseForText,
 		"expect_response_code":      config.ExpectResponseCode,
 		"skip_tls_validation":       config.SkipTLSValidation,
+		"request_body":              config.RequestBody,
+		"headers":                   config.Headers,
 	}
 }
 
@@ -55,12 +55,6 @@ func validateHTTPMonitorConfig(raw map[string]interface{}) error {
 	case "GET", "POST", "PUT", "DELETE", "HEAD", "OPTIONS", "PATCH":
 	default:
 		return errors.New("method must be one of GET, POST, PUT, DELETE, HEAD, OPTIONS, PATCH")
-	}
-	if config.FailureThreshold == 0 {
-		return errors.New("failure_threshold is required")
-	}
-	if config.SuccessThreshold == 0 {
-		return errors.New("success_threshold is required")
 	}
 	if config.TimeoutMS == 0 {
 		return errors.New("timeout_ms is required")

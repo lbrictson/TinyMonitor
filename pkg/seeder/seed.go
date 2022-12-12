@@ -41,15 +41,15 @@ func Run(dbConnection *db.DatabaseConnection) error {
 	}
 	if len(allMonitors) == 0 {
 		_, err = dbConnection.CreateMonitor(ctx, db.CreateMonitorInput{
-			Name:            "Server-Heartbeat-Check",
-			IntervalSeconds: 10,
-			MonitorType:     "http",
+			Name:             "Server-Heartbeat-Check",
+			IntervalSeconds:  10,
+			MonitorType:      "http",
+			FailureThreshold: 1,
+			SuccessThreshold: 1,
 			Config: api.ConvertHTTPMonitorConfigToGeneric(api.HTTPMonitorConfig{
 				URL:                    "127.0.0.1",
 				Method:                 "GET",
 				BodyContains:           "",
-				FailureThreshold:       3,
-				SuccessThreshold:       1,
 				TimeoutMS:              200,
 				DoubleCheckFailures:    false,
 				InspectResponseForText: "",

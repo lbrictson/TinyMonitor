@@ -143,6 +143,69 @@ func (mu *MonitorUpdate) SetNillablePaused(b *bool) *MonitorUpdate {
 	return mu
 }
 
+// SetFailureCount sets the "failure_count" field.
+func (mu *MonitorUpdate) SetFailureCount(i int) *MonitorUpdate {
+	mu.mutation.ResetFailureCount()
+	mu.mutation.SetFailureCount(i)
+	return mu
+}
+
+// SetNillableFailureCount sets the "failure_count" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableFailureCount(i *int) *MonitorUpdate {
+	if i != nil {
+		mu.SetFailureCount(*i)
+	}
+	return mu
+}
+
+// AddFailureCount adds i to the "failure_count" field.
+func (mu *MonitorUpdate) AddFailureCount(i int) *MonitorUpdate {
+	mu.mutation.AddFailureCount(i)
+	return mu
+}
+
+// SetSuccessThreshold sets the "success_threshold" field.
+func (mu *MonitorUpdate) SetSuccessThreshold(i int) *MonitorUpdate {
+	mu.mutation.ResetSuccessThreshold()
+	mu.mutation.SetSuccessThreshold(i)
+	return mu
+}
+
+// SetNillableSuccessThreshold sets the "success_threshold" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableSuccessThreshold(i *int) *MonitorUpdate {
+	if i != nil {
+		mu.SetSuccessThreshold(*i)
+	}
+	return mu
+}
+
+// AddSuccessThreshold adds i to the "success_threshold" field.
+func (mu *MonitorUpdate) AddSuccessThreshold(i int) *MonitorUpdate {
+	mu.mutation.AddSuccessThreshold(i)
+	return mu
+}
+
+// SetFailureThreshold sets the "failure_threshold" field.
+func (mu *MonitorUpdate) SetFailureThreshold(i int) *MonitorUpdate {
+	mu.mutation.ResetFailureThreshold()
+	mu.mutation.SetFailureThreshold(i)
+	return mu
+}
+
+// SetNillableFailureThreshold sets the "failure_threshold" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableFailureThreshold(i *int) *MonitorUpdate {
+	if i != nil {
+		mu.SetFailureThreshold(*i)
+	}
+	return mu
+}
+
+// AddFailureThreshold adds i to the "failure_threshold" field.
+func (mu *MonitorUpdate) AddFailureThreshold(i int) *MonitorUpdate {
+	mu.mutation.AddFailureThreshold(i)
+	return mu
+}
+
 // Mutation returns the MonitorMutation object of the builder.
 func (mu *MonitorUpdate) Mutation() *MonitorMutation {
 	return mu.mutation
@@ -217,7 +280,7 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Table:   monitor.Table,
 			Columns: monitor.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeString,
 				Column: monitor.FieldID,
 			},
 		},
@@ -261,6 +324,24 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.Paused(); ok {
 		_spec.SetField(monitor.FieldPaused, field.TypeBool, value)
+	}
+	if value, ok := mu.mutation.FailureCount(); ok {
+		_spec.SetField(monitor.FieldFailureCount, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.AddedFailureCount(); ok {
+		_spec.AddField(monitor.FieldFailureCount, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.SuccessThreshold(); ok {
+		_spec.SetField(monitor.FieldSuccessThreshold, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.AddedSuccessThreshold(); ok {
+		_spec.AddField(monitor.FieldSuccessThreshold, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.FailureThreshold(); ok {
+		_spec.SetField(monitor.FieldFailureThreshold, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.AddedFailureThreshold(); ok {
+		_spec.AddField(monitor.FieldFailureThreshold, field.TypeInt, value)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, mu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -396,6 +477,69 @@ func (muo *MonitorUpdateOne) SetNillablePaused(b *bool) *MonitorUpdateOne {
 	return muo
 }
 
+// SetFailureCount sets the "failure_count" field.
+func (muo *MonitorUpdateOne) SetFailureCount(i int) *MonitorUpdateOne {
+	muo.mutation.ResetFailureCount()
+	muo.mutation.SetFailureCount(i)
+	return muo
+}
+
+// SetNillableFailureCount sets the "failure_count" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableFailureCount(i *int) *MonitorUpdateOne {
+	if i != nil {
+		muo.SetFailureCount(*i)
+	}
+	return muo
+}
+
+// AddFailureCount adds i to the "failure_count" field.
+func (muo *MonitorUpdateOne) AddFailureCount(i int) *MonitorUpdateOne {
+	muo.mutation.AddFailureCount(i)
+	return muo
+}
+
+// SetSuccessThreshold sets the "success_threshold" field.
+func (muo *MonitorUpdateOne) SetSuccessThreshold(i int) *MonitorUpdateOne {
+	muo.mutation.ResetSuccessThreshold()
+	muo.mutation.SetSuccessThreshold(i)
+	return muo
+}
+
+// SetNillableSuccessThreshold sets the "success_threshold" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableSuccessThreshold(i *int) *MonitorUpdateOne {
+	if i != nil {
+		muo.SetSuccessThreshold(*i)
+	}
+	return muo
+}
+
+// AddSuccessThreshold adds i to the "success_threshold" field.
+func (muo *MonitorUpdateOne) AddSuccessThreshold(i int) *MonitorUpdateOne {
+	muo.mutation.AddSuccessThreshold(i)
+	return muo
+}
+
+// SetFailureThreshold sets the "failure_threshold" field.
+func (muo *MonitorUpdateOne) SetFailureThreshold(i int) *MonitorUpdateOne {
+	muo.mutation.ResetFailureThreshold()
+	muo.mutation.SetFailureThreshold(i)
+	return muo
+}
+
+// SetNillableFailureThreshold sets the "failure_threshold" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableFailureThreshold(i *int) *MonitorUpdateOne {
+	if i != nil {
+		muo.SetFailureThreshold(*i)
+	}
+	return muo
+}
+
+// AddFailureThreshold adds i to the "failure_threshold" field.
+func (muo *MonitorUpdateOne) AddFailureThreshold(i int) *MonitorUpdateOne {
+	muo.mutation.AddFailureThreshold(i)
+	return muo
+}
+
 // Mutation returns the MonitorMutation object of the builder.
 func (muo *MonitorUpdateOne) Mutation() *MonitorMutation {
 	return muo.mutation
@@ -483,7 +627,7 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 			Table:   monitor.Table,
 			Columns: monitor.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeString,
 				Column: monitor.FieldID,
 			},
 		},
@@ -544,6 +688,24 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 	}
 	if value, ok := muo.mutation.Paused(); ok {
 		_spec.SetField(monitor.FieldPaused, field.TypeBool, value)
+	}
+	if value, ok := muo.mutation.FailureCount(); ok {
+		_spec.SetField(monitor.FieldFailureCount, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.AddedFailureCount(); ok {
+		_spec.AddField(monitor.FieldFailureCount, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.SuccessThreshold(); ok {
+		_spec.SetField(monitor.FieldSuccessThreshold, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.AddedSuccessThreshold(); ok {
+		_spec.AddField(monitor.FieldSuccessThreshold, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.FailureThreshold(); ok {
+		_spec.SetField(monitor.FieldFailureThreshold, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.AddedFailureThreshold(); ok {
+		_spec.AddField(monitor.FieldFailureThreshold, field.TypeInt, value)
 	}
 	_node = &Monitor{config: muo.config}
 	_spec.Assign = _node.assignValues

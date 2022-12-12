@@ -6,7 +6,6 @@ import (
 	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/lbrictson/TinyMonitor/pkg/security"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -14,7 +13,6 @@ import (
 type UserModel struct {
 	Username  string    `json:"username"`
 	Role      string    `json:"role"`
-	ID        int       `json:"id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 	LockedOut bool      `json:"locked_out"`
@@ -27,7 +25,6 @@ func convertDBUserToAPIUser(user *db.User) *UserModel {
 	return &UserModel{
 		Username:  user.Username,
 		Role:      user.Role,
-		ID:        user.ID,
 		CreatedAt: user.CreatedAt,
 		UpdatedAt: user.UpdatedAt,
 		LockedOut: user.Locked,
@@ -35,14 +32,8 @@ func convertDBUserToAPIUser(user *db.User) *UserModel {
 }
 
 func (s *Server) getUser(c echo.Context) error {
-	param := c.Param("id")
-	// Convert param to int
-	id, err := strconv.Atoi(param)
-	if err != nil {
-		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid user id"))
-	}
 	// Get user from database
-	user, err := s.dbConnection.GetUserByID(c.Request().Context(), id)
+	user, err := s.dbConnection.GetUserByUsername(c.Request().Context(), c.Param("id"))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return s.returnErrorResponse(c, http.StatusNotFound, errors.New("user not found"))
@@ -65,14 +56,8 @@ func (s *Server) listUsers(c echo.Context) error {
 }
 
 func (s *Server) deleteUser(c echo.Context) error {
-	param := c.Param("id")
-	// Convert param to int
-	id, err := strconv.Atoi(param)
-	if err != nil {
-		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid user id"))
-	}
 	// Get user from database
-	user, err := s.dbConnection.GetUserByID(c.Request().Context(), id)
+	user, err := s.dbConnection.GetUserByUsername(c.Request().Context(), c.Param("id"))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return s.returnErrorResponse(c, http.StatusNotFound, errors.New("user not found"))
@@ -85,7 +70,7 @@ func (s *Server) deleteUser(c echo.Context) error {
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("cannot delete self"))
 	}
 	// Delete user
-	err = s.dbConnection.DeleteUser(c.Request().Context(), user.ID)
+	err = s.dbConnection.DeleteUser(c.Request().Context(), user.Username)
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
@@ -137,15 +122,8 @@ func (s *Server) updateUser(c echo.Context) error {
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusBadRequest, err)
 	}
-	// Get the user from the database
-	param := c.Param("id")
-	// Convert param to int
-	id, err := strconv.Atoi(param)
-	if err != nil {
-		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid user id"))
-	}
 	// Get user from database
-	dbUser, err := s.dbConnection.GetUserByID(c.Request().Context(), id)
+	dbUser, err := s.dbConnection.GetUserByUsername(c.Request().Context(), c.Param("id"))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return s.returnErrorResponse(c, http.StatusNotFound, errors.New("user not found"))

@@ -10,7 +10,6 @@ import (
 )
 
 type BaseMonitor struct {
-	ID                  int                    `json:"id"`
 	Name                string                 `json:"name"`
 	Description         string                 `json:"description"`
 	IntervalSeconds     int                    `json:"interval_seconds"`
@@ -22,6 +21,9 @@ type BaseMonitor struct {
 	MonitorType         string                 `json:"monitor_type"`
 	Config              map[string]interface{} `json:"config"`
 	Paused              bool                   `json:"paused"`
+	FailureCount        int                    `json:"failure_count"`
+	SuccessThreshold    int                    `json:"success_threshold"`
+	FailureThreshold    int                    `json:"failure_threshold"`
 }
 
 func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
@@ -29,8 +31,7 @@ func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
 		return nil
 	}
 	return &BaseMonitor{
-		ID:                  entMonitor.ID,
-		Name:                entMonitor.Name,
+		Name:                entMonitor.ID,
 		Description:         entMonitor.Description,
 		IntervalSeconds:     entMonitor.IntervalSeconds,
 		Status:              entMonitor.Status,
@@ -41,12 +42,10 @@ func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
 		MonitorType:         entMonitor.MonitorType,
 		Config:              entMonitor.Config,
 		Paused:              entMonitor.Paused,
+		FailureCount:        entMonitor.FailureCount,
+		SuccessThreshold:    entMonitor.SuccessThreshold,
+		FailureThreshold:    entMonitor.FailureThreshold,
 	}
-}
-
-func (db *DatabaseConnection) GetMonitorByID(ctx context.Context, id int) (*BaseMonitor, error) {
-	m, err := db.client.Monitor.Query().Where(monitor.ID(id)).First(ctx)
-	return convertEntMonitorToDBMonitor(m), err
 }
 
 type ListMonitorOptions struct {
@@ -82,21 +81,23 @@ func (db *DatabaseConnection) ListMonitors(ctx context.Context, options ListMoni
 	return dbMonitors, nil
 }
 
-func (db *DatabaseConnection) DeleteMonitor(ctx context.Context, id int) error {
-	return db.client.Monitor.DeleteOneID(id).Exec(ctx)
+func (db *DatabaseConnection) DeleteMonitor(ctx context.Context, name string) error {
+	return db.client.Monitor.DeleteOneID(name).Exec(ctx)
 }
 
 func (db *DatabaseConnection) GetMonitorByName(ctx context.Context, name string) (*BaseMonitor, error) {
-	m, err := db.client.Monitor.Query().Where(monitor.Name(name)).First(ctx)
+	m, err := db.client.Monitor.Get(ctx, name)
 	return convertEntMonitorToDBMonitor(m), err
 }
 
 type CreateMonitorInput struct {
-	Name            string                 `json:"name"`
-	IntervalSeconds int                    `json:"interval_seconds"`
-	MonitorType     string                 `json:"monitor_type"`
-	Config          map[string]interface{} `json:"config"`
-	Description     string                 `json:"description"`
+	Name             string                 `json:"name"`
+	IntervalSeconds  int                    `json:"interval_seconds"`
+	MonitorType      string                 `json:"monitor_type"`
+	Config           map[string]interface{} `json:"config"`
+	Description      string                 `json:"description"`
+	SuccessThreshold int                    `json:"success_threshold"`
+	FailureThreshold int                    `json:"failure_threshold"`
 }
 
 func (i *CreateMonitorInput) validate() error {
@@ -106,23 +107,35 @@ func (i *CreateMonitorInput) validate() error {
 	if strings.Contains(i.Name, " ") {
 		return errors.New("name cannot contain spaces")
 	}
+	// Validate name  only contains letters, numbers, and dashes
+	if !strings.ContainsAny(i.Name, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-") {
+		return errors.New("name can only contain letters, numbers, and dashes")
+	}
 	if i.IntervalSeconds <= 0 {
 		return errors.New("interval_seconds must be greater than 0")
 	}
 	if i.MonitorType == "" {
 		return errors.New("monitor_type is required")
 	}
+	if i.FailureThreshold <= 0 {
+		i.FailureThreshold = 1
+	}
+	if i.SuccessThreshold <= 0 {
+		i.SuccessThreshold = 1
+	}
 	return nil
 }
 
 func (db *DatabaseConnection) CreateMonitor(ctx context.Context, input CreateMonitorInput) (*BaseMonitor, error) {
 	m, err := db.client.Monitor.Create().
-		SetName(input.Name).
+		SetID(input.Name).
 		SetIntervalSeconds(input.IntervalSeconds).
 		SetMonitorType(input.MonitorType).
 		SetConfig(input.Config).
 		SetDescription(input.Description).
 		SetStatus("initializing").
+		SetSuccessThreshold(input.SuccessThreshold).
+		SetFailureThreshold(input.FailureThreshold).
 		Save(ctx)
 	return convertEntMonitorToDBMonitor(m), err
 }
@@ -135,10 +148,13 @@ type UpdateMonitorInput struct {
 	StatusLastChangedAt *time.Time             `json:"status_last_changed_at"`
 	Paused              *bool                  `json:"paused"`
 	Description         *string                `json:"description"`
+	FailureCount        *int                   `json:"failure_count"`
+	SuccessThreshold    *int                   `json:"success_threshold"`
+	FailureThreshold    *int                   `json:"failure_threshold"`
 }
 
-func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, id int, input UpdateMonitorInput) (*BaseMonitor, error) {
-	update := db.client.Monitor.UpdateOneID(id)
+func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, name string, input UpdateMonitorInput) (*BaseMonitor, error) {
+	update := db.client.Monitor.UpdateOneID(name)
 	if input.IntervalSeconds != nil {
 		update = update.SetIntervalSeconds(*input.IntervalSeconds)
 	}
@@ -159,6 +175,15 @@ func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, id int, input U
 	}
 	if input.Description != nil {
 		update = update.SetDescription(*input.Description)
+	}
+	if input.FailureCount != nil {
+		update = update.SetFailureCount(*input.FailureCount)
+	}
+	if input.SuccessThreshold != nil {
+		update = update.SetSuccessThreshold(*input.SuccessThreshold)
+	}
+	if input.FailureThreshold != nil {
+		update = update.SetFailureThreshold(*input.FailureThreshold)
 	}
 	m, err := update.Save(ctx)
 	return convertEntMonitorToDBMonitor(m), err

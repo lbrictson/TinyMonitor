@@ -14,7 +14,7 @@ type Monitor struct {
 // Fields of the Monitor.
 func (Monitor) Fields() []ent.Field {
 	return []ent.Field{
-		field.String("name").Unique().Immutable(),
+		field.String("id").StorageKey("id").MaxLen(50).NotEmpty().Immutable(),
 		field.String("description").Default(""),
 		field.String("status"),
 		field.Time("last_checked_at").Nillable().Optional(),
@@ -25,6 +25,9 @@ func (Monitor) Fields() []ent.Field {
 		field.JSON("config", map[string]interface{}{}),
 		field.Int("interval_seconds").Default(60),
 		field.Bool("paused").Default(false),
+		field.Int("failure_count").Default(0),
+		field.Int("success_threshold").Default(1),
+		field.Int("failure_threshold").Default(1),
 	}
 }
 

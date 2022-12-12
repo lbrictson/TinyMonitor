@@ -34,8 +34,7 @@ type MonitorMutation struct {
 	config
 	op                     Op
 	typ                    string
-	id                     *int
-	name                   *string
+	id                     *string
 	description            *string
 	status                 *string
 	last_checked_at        *time.Time
@@ -47,6 +46,12 @@ type MonitorMutation struct {
 	interval_seconds       *int
 	addinterval_seconds    *int
 	paused                 *bool
+	failure_count          *int
+	addfailure_count       *int
+	success_threshold      *int
+	addsuccess_threshold   *int
+	failure_threshold      *int
+	addfailure_threshold   *int
 	clearedFields          map[string]struct{}
 	done                   bool
 	oldValue               func(context.Context) (*Monitor, error)
@@ -73,7 +78,7 @@ func newMonitorMutation(c config, op Op, opts ...monitorOption) *MonitorMutation
 }
 
 // withMonitorID sets the ID field of the mutation.
-func withMonitorID(id int) monitorOption {
+func withMonitorID(id string) monitorOption {
 	return func(m *MonitorMutation) {
 		var (
 			err   error
@@ -123,9 +128,15 @@ func (m MonitorMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Monitor entities.
+func (m *MonitorMutation) SetID(id string) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *MonitorMutation) ID() (id int, exists bool) {
+func (m *MonitorMutation) ID() (id string, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -136,12 +147,12 @@ func (m *MonitorMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *MonitorMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *MonitorMutation) IDs(ctx context.Context) ([]string, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []string{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -149,42 +160,6 @@ func (m *MonitorMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetName sets the "name" field.
-func (m *MonitorMutation) SetName(s string) {
-	m.name = &s
-}
-
-// Name returns the value of the "name" field in the mutation.
-func (m *MonitorMutation) Name() (r string, exists bool) {
-	v := m.name
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldName returns the old "name" field's value of the Monitor entity.
-// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *MonitorMutation) OldName(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldName is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldName requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldName: %w", err)
-	}
-	return oldValue.Name, nil
-}
-
-// ResetName resets all changes to the "name" field.
-func (m *MonitorMutation) ResetName() {
-	m.name = nil
 }
 
 // SetDescription sets the "description" field.
@@ -580,6 +555,174 @@ func (m *MonitorMutation) ResetPaused() {
 	m.paused = nil
 }
 
+// SetFailureCount sets the "failure_count" field.
+func (m *MonitorMutation) SetFailureCount(i int) {
+	m.failure_count = &i
+	m.addfailure_count = nil
+}
+
+// FailureCount returns the value of the "failure_count" field in the mutation.
+func (m *MonitorMutation) FailureCount() (r int, exists bool) {
+	v := m.failure_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailureCount returns the old "failure_count" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldFailureCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailureCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailureCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailureCount: %w", err)
+	}
+	return oldValue.FailureCount, nil
+}
+
+// AddFailureCount adds i to the "failure_count" field.
+func (m *MonitorMutation) AddFailureCount(i int) {
+	if m.addfailure_count != nil {
+		*m.addfailure_count += i
+	} else {
+		m.addfailure_count = &i
+	}
+}
+
+// AddedFailureCount returns the value that was added to the "failure_count" field in this mutation.
+func (m *MonitorMutation) AddedFailureCount() (r int, exists bool) {
+	v := m.addfailure_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFailureCount resets all changes to the "failure_count" field.
+func (m *MonitorMutation) ResetFailureCount() {
+	m.failure_count = nil
+	m.addfailure_count = nil
+}
+
+// SetSuccessThreshold sets the "success_threshold" field.
+func (m *MonitorMutation) SetSuccessThreshold(i int) {
+	m.success_threshold = &i
+	m.addsuccess_threshold = nil
+}
+
+// SuccessThreshold returns the value of the "success_threshold" field in the mutation.
+func (m *MonitorMutation) SuccessThreshold() (r int, exists bool) {
+	v := m.success_threshold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuccessThreshold returns the old "success_threshold" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldSuccessThreshold(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuccessThreshold is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuccessThreshold requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuccessThreshold: %w", err)
+	}
+	return oldValue.SuccessThreshold, nil
+}
+
+// AddSuccessThreshold adds i to the "success_threshold" field.
+func (m *MonitorMutation) AddSuccessThreshold(i int) {
+	if m.addsuccess_threshold != nil {
+		*m.addsuccess_threshold += i
+	} else {
+		m.addsuccess_threshold = &i
+	}
+}
+
+// AddedSuccessThreshold returns the value that was added to the "success_threshold" field in this mutation.
+func (m *MonitorMutation) AddedSuccessThreshold() (r int, exists bool) {
+	v := m.addsuccess_threshold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSuccessThreshold resets all changes to the "success_threshold" field.
+func (m *MonitorMutation) ResetSuccessThreshold() {
+	m.success_threshold = nil
+	m.addsuccess_threshold = nil
+}
+
+// SetFailureThreshold sets the "failure_threshold" field.
+func (m *MonitorMutation) SetFailureThreshold(i int) {
+	m.failure_threshold = &i
+	m.addfailure_threshold = nil
+}
+
+// FailureThreshold returns the value of the "failure_threshold" field in the mutation.
+func (m *MonitorMutation) FailureThreshold() (r int, exists bool) {
+	v := m.failure_threshold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFailureThreshold returns the old "failure_threshold" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldFailureThreshold(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFailureThreshold is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFailureThreshold requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFailureThreshold: %w", err)
+	}
+	return oldValue.FailureThreshold, nil
+}
+
+// AddFailureThreshold adds i to the "failure_threshold" field.
+func (m *MonitorMutation) AddFailureThreshold(i int) {
+	if m.addfailure_threshold != nil {
+		*m.addfailure_threshold += i
+	} else {
+		m.addfailure_threshold = &i
+	}
+}
+
+// AddedFailureThreshold returns the value that was added to the "failure_threshold" field in this mutation.
+func (m *MonitorMutation) AddedFailureThreshold() (r int, exists bool) {
+	v := m.addfailure_threshold
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetFailureThreshold resets all changes to the "failure_threshold" field.
+func (m *MonitorMutation) ResetFailureThreshold() {
+	m.failure_threshold = nil
+	m.addfailure_threshold = nil
+}
+
 // Where appends a list predicates to the MonitorMutation builder.
 func (m *MonitorMutation) Where(ps ...predicate.Monitor) {
 	m.predicates = append(m.predicates, ps...)
@@ -599,10 +742,7 @@ func (m *MonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MonitorMutation) Fields() []string {
-	fields := make([]string, 0, 11)
-	if m.name != nil {
-		fields = append(fields, monitor.FieldName)
-	}
+	fields := make([]string, 0, 13)
 	if m.description != nil {
 		fields = append(fields, monitor.FieldDescription)
 	}
@@ -633,6 +773,15 @@ func (m *MonitorMutation) Fields() []string {
 	if m.paused != nil {
 		fields = append(fields, monitor.FieldPaused)
 	}
+	if m.failure_count != nil {
+		fields = append(fields, monitor.FieldFailureCount)
+	}
+	if m.success_threshold != nil {
+		fields = append(fields, monitor.FieldSuccessThreshold)
+	}
+	if m.failure_threshold != nil {
+		fields = append(fields, monitor.FieldFailureThreshold)
+	}
 	return fields
 }
 
@@ -641,8 +790,6 @@ func (m *MonitorMutation) Fields() []string {
 // schema.
 func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case monitor.FieldName:
-		return m.Name()
 	case monitor.FieldDescription:
 		return m.Description()
 	case monitor.FieldStatus:
@@ -663,6 +810,12 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.IntervalSeconds()
 	case monitor.FieldPaused:
 		return m.Paused()
+	case monitor.FieldFailureCount:
+		return m.FailureCount()
+	case monitor.FieldSuccessThreshold:
+		return m.SuccessThreshold()
+	case monitor.FieldFailureThreshold:
+		return m.FailureThreshold()
 	}
 	return nil, false
 }
@@ -672,8 +825,6 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case monitor.FieldName:
-		return m.OldName(ctx)
 	case monitor.FieldDescription:
 		return m.OldDescription(ctx)
 	case monitor.FieldStatus:
@@ -694,6 +845,12 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldIntervalSeconds(ctx)
 	case monitor.FieldPaused:
 		return m.OldPaused(ctx)
+	case monitor.FieldFailureCount:
+		return m.OldFailureCount(ctx)
+	case monitor.FieldSuccessThreshold:
+		return m.OldSuccessThreshold(ctx)
+	case monitor.FieldFailureThreshold:
+		return m.OldFailureThreshold(ctx)
 	}
 	return nil, fmt.Errorf("unknown Monitor field %s", name)
 }
@@ -703,13 +860,6 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 // type.
 func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case monitor.FieldName:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetName(v)
-		return nil
 	case monitor.FieldDescription:
 		v, ok := value.(string)
 		if !ok {
@@ -780,6 +930,27 @@ func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPaused(v)
 		return nil
+	case monitor.FieldFailureCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailureCount(v)
+		return nil
+	case monitor.FieldSuccessThreshold:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuccessThreshold(v)
+		return nil
+	case monitor.FieldFailureThreshold:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFailureThreshold(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Monitor field %s", name)
 }
@@ -791,6 +962,15 @@ func (m *MonitorMutation) AddedFields() []string {
 	if m.addinterval_seconds != nil {
 		fields = append(fields, monitor.FieldIntervalSeconds)
 	}
+	if m.addfailure_count != nil {
+		fields = append(fields, monitor.FieldFailureCount)
+	}
+	if m.addsuccess_threshold != nil {
+		fields = append(fields, monitor.FieldSuccessThreshold)
+	}
+	if m.addfailure_threshold != nil {
+		fields = append(fields, monitor.FieldFailureThreshold)
+	}
 	return fields
 }
 
@@ -801,6 +981,12 @@ func (m *MonitorMutation) AddedField(name string) (ent.Value, bool) {
 	switch name {
 	case monitor.FieldIntervalSeconds:
 		return m.AddedIntervalSeconds()
+	case monitor.FieldFailureCount:
+		return m.AddedFailureCount()
+	case monitor.FieldSuccessThreshold:
+		return m.AddedSuccessThreshold()
+	case monitor.FieldFailureThreshold:
+		return m.AddedFailureThreshold()
 	}
 	return nil, false
 }
@@ -816,6 +1002,27 @@ func (m *MonitorMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddIntervalSeconds(v)
+		return nil
+	case monitor.FieldFailureCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFailureCount(v)
+		return nil
+	case monitor.FieldSuccessThreshold:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSuccessThreshold(v)
+		return nil
+	case monitor.FieldFailureThreshold:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddFailureThreshold(v)
 		return nil
 	}
 	return fmt.Errorf("unknown Monitor numeric field %s", name)
@@ -853,9 +1060,6 @@ func (m *MonitorMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *MonitorMutation) ResetField(name string) error {
 	switch name {
-	case monitor.FieldName:
-		m.ResetName()
-		return nil
 	case monitor.FieldDescription:
 		m.ResetDescription()
 		return nil
@@ -885,6 +1089,15 @@ func (m *MonitorMutation) ResetField(name string) error {
 		return nil
 	case monitor.FieldPaused:
 		m.ResetPaused()
+		return nil
+	case monitor.FieldFailureCount:
+		m.ResetFailureCount()
+		return nil
+	case monitor.FieldSuccessThreshold:
+		m.ResetSuccessThreshold()
+		return nil
+	case monitor.FieldFailureThreshold:
+		m.ResetFailureThreshold()
 		return nil
 	}
 	return fmt.Errorf("unknown Monitor field %s", name)
@@ -943,8 +1156,7 @@ type UserMutation struct {
 	config
 	op            Op
 	typ           string
-	id            *int
-	username      *string
+	id            *string
 	api_key       *string
 	created_at    *time.Time
 	updated_at    *time.Time
@@ -977,7 +1189,7 @@ func newUserMutation(c config, op Op, opts ...userOption) *UserMutation {
 }
 
 // withUserID sets the ID field of the mutation.
-func withUserID(id int) userOption {
+func withUserID(id string) userOption {
 	return func(m *UserMutation) {
 		var (
 			err   error
@@ -1027,9 +1239,15 @@ func (m UserMutation) Tx() (*Tx, error) {
 	return tx, nil
 }
 
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of User entities.
+func (m *UserMutation) SetID(id string) {
+	m.id = &id
+}
+
 // ID returns the ID value in the mutation. Note that the ID is only available
 // if it was provided to the builder or after it was returned from the database.
-func (m *UserMutation) ID() (id int, exists bool) {
+func (m *UserMutation) ID() (id string, exists bool) {
 	if m.id == nil {
 		return
 	}
@@ -1040,12 +1258,12 @@ func (m *UserMutation) ID() (id int, exists bool) {
 // That means, if the mutation is applied within a transaction with an isolation level such
 // as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
 // or updated by the mutation.
-func (m *UserMutation) IDs(ctx context.Context) ([]int, error) {
+func (m *UserMutation) IDs(ctx context.Context) ([]string, error) {
 	switch {
 	case m.op.Is(OpUpdateOne | OpDeleteOne):
 		id, exists := m.ID()
 		if exists {
-			return []int{id}, nil
+			return []string{id}, nil
 		}
 		fallthrough
 	case m.op.Is(OpUpdate | OpDelete):
@@ -1053,42 +1271,6 @@ func (m *UserMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
-}
-
-// SetUsername sets the "username" field.
-func (m *UserMutation) SetUsername(s string) {
-	m.username = &s
-}
-
-// Username returns the value of the "username" field in the mutation.
-func (m *UserMutation) Username() (r string, exists bool) {
-	v := m.username
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldUsername returns the old "username" field's value of the User entity.
-// If the User object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserMutation) OldUsername(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldUsername is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldUsername requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldUsername: %w", err)
-	}
-	return oldValue.Username, nil
-}
-
-// ResetUsername resets all changes to the "username" field.
-func (m *UserMutation) ResetUsername() {
-	m.username = nil
 }
 
 // SetAPIKey sets the "api_key" field.
@@ -1339,10 +1521,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 7)
-	if m.username != nil {
-		fields = append(fields, user.FieldUsername)
-	}
+	fields := make([]string, 0, 6)
 	if m.api_key != nil {
 		fields = append(fields, user.FieldAPIKey)
 	}
@@ -1369,8 +1548,6 @@ func (m *UserMutation) Fields() []string {
 // schema.
 func (m *UserMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case user.FieldUsername:
-		return m.Username()
 	case user.FieldAPIKey:
 		return m.APIKey()
 	case user.FieldCreatedAt:
@@ -1392,8 +1569,6 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case user.FieldUsername:
-		return m.OldUsername(ctx)
 	case user.FieldAPIKey:
 		return m.OldAPIKey(ctx)
 	case user.FieldCreatedAt:
@@ -1415,13 +1590,6 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 // type.
 func (m *UserMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case user.FieldUsername:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetUsername(v)
-		return nil
 	case user.FieldAPIKey:
 		v, ok := value.(string)
 		if !ok {
@@ -1522,9 +1690,6 @@ func (m *UserMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *UserMutation) ResetField(name string) error {
 	switch name {
-	case user.FieldUsername:
-		m.ResetUsername()
-		return nil
 	case user.FieldAPIKey:
 		m.ResetAPIKey()
 		return nil

@@ -20,12 +20,6 @@ type MonitorCreate struct {
 	hooks    []Hook
 }
 
-// SetName sets the "name" field.
-func (mc *MonitorCreate) SetName(s string) *MonitorCreate {
-	mc.mutation.SetName(s)
-	return mc
-}
-
 // SetDescription sets the "description" field.
 func (mc *MonitorCreate) SetDescription(s string) *MonitorCreate {
 	mc.mutation.SetDescription(s)
@@ -142,6 +136,54 @@ func (mc *MonitorCreate) SetNillablePaused(b *bool) *MonitorCreate {
 	return mc
 }
 
+// SetFailureCount sets the "failure_count" field.
+func (mc *MonitorCreate) SetFailureCount(i int) *MonitorCreate {
+	mc.mutation.SetFailureCount(i)
+	return mc
+}
+
+// SetNillableFailureCount sets the "failure_count" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableFailureCount(i *int) *MonitorCreate {
+	if i != nil {
+		mc.SetFailureCount(*i)
+	}
+	return mc
+}
+
+// SetSuccessThreshold sets the "success_threshold" field.
+func (mc *MonitorCreate) SetSuccessThreshold(i int) *MonitorCreate {
+	mc.mutation.SetSuccessThreshold(i)
+	return mc
+}
+
+// SetNillableSuccessThreshold sets the "success_threshold" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableSuccessThreshold(i *int) *MonitorCreate {
+	if i != nil {
+		mc.SetSuccessThreshold(*i)
+	}
+	return mc
+}
+
+// SetFailureThreshold sets the "failure_threshold" field.
+func (mc *MonitorCreate) SetFailureThreshold(i int) *MonitorCreate {
+	mc.mutation.SetFailureThreshold(i)
+	return mc
+}
+
+// SetNillableFailureThreshold sets the "failure_threshold" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableFailureThreshold(i *int) *MonitorCreate {
+	if i != nil {
+		mc.SetFailureThreshold(*i)
+	}
+	return mc
+}
+
+// SetID sets the "id" field.
+func (mc *MonitorCreate) SetID(s string) *MonitorCreate {
+	mc.mutation.SetID(s)
+	return mc
+}
+
 // Mutation returns the MonitorMutation object of the builder.
 func (mc *MonitorCreate) Mutation() *MonitorMutation {
 	return mc.mutation
@@ -243,13 +285,22 @@ func (mc *MonitorCreate) defaults() {
 		v := monitor.DefaultPaused
 		mc.mutation.SetPaused(v)
 	}
+	if _, ok := mc.mutation.FailureCount(); !ok {
+		v := monitor.DefaultFailureCount
+		mc.mutation.SetFailureCount(v)
+	}
+	if _, ok := mc.mutation.SuccessThreshold(); !ok {
+		v := monitor.DefaultSuccessThreshold
+		mc.mutation.SetSuccessThreshold(v)
+	}
+	if _, ok := mc.mutation.FailureThreshold(); !ok {
+		v := monitor.DefaultFailureThreshold
+		mc.mutation.SetFailureThreshold(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (mc *MonitorCreate) check() error {
-	if _, ok := mc.mutation.Name(); !ok {
-		return &ValidationError{Name: "name", err: errors.New(`ent: missing required field "Monitor.name"`)}
-	}
 	if _, ok := mc.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Monitor.description"`)}
 	}
@@ -277,6 +328,20 @@ func (mc *MonitorCreate) check() error {
 	if _, ok := mc.mutation.Paused(); !ok {
 		return &ValidationError{Name: "paused", err: errors.New(`ent: missing required field "Monitor.paused"`)}
 	}
+	if _, ok := mc.mutation.FailureCount(); !ok {
+		return &ValidationError{Name: "failure_count", err: errors.New(`ent: missing required field "Monitor.failure_count"`)}
+	}
+	if _, ok := mc.mutation.SuccessThreshold(); !ok {
+		return &ValidationError{Name: "success_threshold", err: errors.New(`ent: missing required field "Monitor.success_threshold"`)}
+	}
+	if _, ok := mc.mutation.FailureThreshold(); !ok {
+		return &ValidationError{Name: "failure_threshold", err: errors.New(`ent: missing required field "Monitor.failure_threshold"`)}
+	}
+	if v, ok := mc.mutation.ID(); ok {
+		if err := monitor.IDValidator(v); err != nil {
+			return &ValidationError{Name: "id", err: fmt.Errorf(`ent: validator failed for field "Monitor.id": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -288,8 +353,13 @@ func (mc *MonitorCreate) sqlSave(ctx context.Context) (*Monitor, error) {
 		}
 		return nil, err
 	}
-	id := _spec.ID.Value.(int64)
-	_node.ID = int(id)
+	if _spec.ID.Value != nil {
+		if id, ok := _spec.ID.Value.(string); ok {
+			_node.ID = id
+		} else {
+			return nil, fmt.Errorf("unexpected Monitor.ID type: %T", _spec.ID.Value)
+		}
+	}
 	return _node, nil
 }
 
@@ -299,14 +369,14 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 		_spec = &sqlgraph.CreateSpec{
 			Table: monitor.Table,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeString,
 				Column: monitor.FieldID,
 			},
 		}
 	)
-	if value, ok := mc.mutation.Name(); ok {
-		_spec.SetField(monitor.FieldName, field.TypeString, value)
-		_node.Name = value
+	if id, ok := mc.mutation.ID(); ok {
+		_node.ID = id
+		_spec.ID.Value = id
 	}
 	if value, ok := mc.mutation.Description(); ok {
 		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
@@ -347,6 +417,18 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.Paused(); ok {
 		_spec.SetField(monitor.FieldPaused, field.TypeBool, value)
 		_node.Paused = value
+	}
+	if value, ok := mc.mutation.FailureCount(); ok {
+		_spec.SetField(monitor.FieldFailureCount, field.TypeInt, value)
+		_node.FailureCount = value
+	}
+	if value, ok := mc.mutation.SuccessThreshold(); ok {
+		_spec.SetField(monitor.FieldSuccessThreshold, field.TypeInt, value)
+		_node.SuccessThreshold = value
+	}
+	if value, ok := mc.mutation.FailureThreshold(); ok {
+		_spec.SetField(monitor.FieldFailureThreshold, field.TypeInt, value)
+		_node.FailureThreshold = value
 	}
 	return _node, _spec
 }
@@ -392,10 +474,6 @@ func (mcb *MonitorCreateBulk) Save(ctx context.Context) ([]*Monitor, error) {
 					return nil, err
 				}
 				mutation.id = &nodes[i].ID
-				if specs[i].ID.Value != nil {
-					id := specs[i].ID.Value.(int64)
-					nodes[i].ID = int(id)
-				}
 				mutation.done = true
 				return nodes[i], nil
 			})

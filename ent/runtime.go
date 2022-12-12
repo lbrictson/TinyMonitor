@@ -42,6 +42,36 @@ func init() {
 	monitorDescPaused := monitorFields[10].Descriptor()
 	// monitor.DefaultPaused holds the default value on creation for the paused field.
 	monitor.DefaultPaused = monitorDescPaused.Default.(bool)
+	// monitorDescFailureCount is the schema descriptor for failure_count field.
+	monitorDescFailureCount := monitorFields[11].Descriptor()
+	// monitor.DefaultFailureCount holds the default value on creation for the failure_count field.
+	monitor.DefaultFailureCount = monitorDescFailureCount.Default.(int)
+	// monitorDescSuccessThreshold is the schema descriptor for success_threshold field.
+	monitorDescSuccessThreshold := monitorFields[12].Descriptor()
+	// monitor.DefaultSuccessThreshold holds the default value on creation for the success_threshold field.
+	monitor.DefaultSuccessThreshold = monitorDescSuccessThreshold.Default.(int)
+	// monitorDescFailureThreshold is the schema descriptor for failure_threshold field.
+	monitorDescFailureThreshold := monitorFields[13].Descriptor()
+	// monitor.DefaultFailureThreshold holds the default value on creation for the failure_threshold field.
+	monitor.DefaultFailureThreshold = monitorDescFailureThreshold.Default.(int)
+	// monitorDescID is the schema descriptor for id field.
+	monitorDescID := monitorFields[0].Descriptor()
+	// monitor.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	monitor.IDValidator = func() func(string) error {
+		validators := monitorDescID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(id string) error {
+			for _, fn := range fns {
+				if err := fn(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	userFields := schema.User{}.Fields()
 	_ = userFields
 	// userDescCreatedAt is the schema descriptor for created_at field.
@@ -62,4 +92,22 @@ func init() {
 	userDescLocked := userFields[5].Descriptor()
 	// user.DefaultLocked holds the default value on creation for the locked field.
 	user.DefaultLocked = userDescLocked.Default.(bool)
+	// userDescID is the schema descriptor for id field.
+	userDescID := userFields[0].Descriptor()
+	// user.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	user.IDValidator = func() func(string) error {
+		validators := userDescID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(id string) error {
+			for _, fn := range fns {
+				if err := fn(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 }

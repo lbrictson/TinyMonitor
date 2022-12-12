@@ -12,7 +12,6 @@ import (
 )
 
 type MonitorModel struct {
-	ID                        int                    `json:"id"`
 	Name                      string                 `json:"name"`
 	Description               string                 `json:"description"`
 	IntervalSeconds           int                    `json:"interval_seconds"`
@@ -26,6 +25,9 @@ type MonitorModel struct {
 	MonitorType               string                 `json:"monitor_type"`
 	Config                    map[string]interface{} `json:"config"`
 	Paused                    bool                   `json:"paused"`
+	FailureCount              int                    `json:"failure_count"`
+	SuccessThreshold          int                    `json:"success_threshold"`
+	FailureThreshold          int                    `json:"failure_threshold"`
 }
 
 func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
@@ -37,7 +39,6 @@ func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
 		friendlyLastChecked = humanize.Time(*dbMonitor.LastCheckedAt)
 	}
 	return &MonitorModel{
-		ID:                        dbMonitor.ID,
 		Name:                      dbMonitor.Name,
 		Description:               dbMonitor.Description,
 		IntervalSeconds:           dbMonitor.IntervalSeconds,
@@ -50,6 +51,10 @@ func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
 		UpdatedAt:                 dbMonitor.UpdatedAt,
 		MonitorType:               dbMonitor.MonitorType,
 		Config:                    dbMonitor.Config,
+		Paused:                    dbMonitor.Paused,
+		FailureCount:              dbMonitor.FailureCount,
+		SuccessThreshold:          dbMonitor.SuccessThreshold,
+		FailureThreshold:          dbMonitor.FailureThreshold,
 	}
 }
 
@@ -98,13 +103,7 @@ func (s *Server) listMonitors(c echo.Context) error {
 }
 
 func (s *Server) getMonitor(c echo.Context) error {
-	id := c.Param("id")
-	// Convert ID to int
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		return s.returnErrorResponse(c, http.StatusBadRequest, err)
-	}
-	monitor, err := s.dbConnection.GetMonitorByID(c.Request().Context(), idInt)
+	monitor, err := s.dbConnection.GetMonitorByName(c.Request().Context(), c.Param("id"))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return s.returnErrorResponse(c, http.StatusNotFound, errors.New("monitor not found"))
@@ -195,14 +194,8 @@ func (s *Server) updateMonitor(c echo.Context) error {
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusBadRequest, err)
 	}
-	id := c.Param("id")
-	// Convert ID to int
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		return s.returnErrorResponse(c, http.StatusBadRequest, err)
-	}
 	// First get the monitor from the database
-	monitor, err := s.dbConnection.GetMonitorByID(c.Request().Context(), idInt)
+	monitor, err := s.dbConnection.GetMonitorByName(c.Request().Context(), c.Param("id"))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return s.returnErrorResponse(c, http.StatusNotFound, errors.New("monitor not found"))
@@ -219,7 +212,7 @@ func (s *Server) updateMonitor(c echo.Context) error {
 	default:
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
-	monitor, err = s.dbConnection.UpdateMonitor(c.Request().Context(), idInt, db.UpdateMonitorInput{
+	monitor, err = s.dbConnection.UpdateMonitor(c.Request().Context(), monitor.Name, db.UpdateMonitorInput{
 		IntervalSeconds: input.IntervalSeconds,
 		Config:          input.Config,
 		Paused:          input.Paused,

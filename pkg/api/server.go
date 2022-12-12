@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/labstack/echo/v4"
@@ -59,10 +60,10 @@ func (s *Server) Run() {
 	e.HideBanner = true
 	e.HidePort = true
 	// Monitor API
-	e.GET("/api/v1/monitor", s.listMonitors)
-	e.GET("/api/v1/monitor/:id", s.getMonitor)
-	e.POST("/api/v1/monitor", s.createMonitor)
-	e.PATCH("/api/v1/monitor/:id", s.updateMonitor)
+	e.GET("/api/v1/monitor", s.listMonitors, s.userAuthRequired)
+	e.GET("/api/v1/monitor/:id", s.getMonitor, s.userAuthRequired)
+	e.POST("/api/v1/monitor", s.createMonitor, s.userAuthRequired, s.writeRequired)
+	e.PATCH("/api/v1/monitor/:id", s.updateMonitor, s.userAuthRequired, s.writeRequired)
 
 	// User API
 	e.GET("/api/v1/user/:id", s.getUser, s.userAuthRequired)
@@ -78,6 +79,19 @@ func (s *Server) Run() {
 	if os.Getenv("TINYMONITOR_TESTING") == "true" {
 		s.logger.Warn("Running in testing mode")
 	}
+	go s.initialStartMonitors()
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", s.port)))
 	return
+}
+
+func (s *Server) initialStartMonitors() {
+	// Start initial monitors
+	monitors, err := s.dbConnection.ListMonitors(context.Background(), db.ListMonitorOptions{})
+	if err != nil {
+		s.logger.Fatalf("Error listing monitors: %v", err)
+	}
+	for _, monitor := range monitors {
+		time.Sleep(1 * time.Second)
+		go performMonitoringChecks(monitor.Name, s.dbConnection, s.logger)
+	}
 }

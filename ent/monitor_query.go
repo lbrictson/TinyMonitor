@@ -83,8 +83,8 @@ func (mq *MonitorQuery) FirstX(ctx context.Context) *Monitor {
 
 // FirstID returns the first Monitor ID from the query.
 // Returns a *NotFoundError when no Monitor ID was found.
-func (mq *MonitorQuery) FirstID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (mq *MonitorQuery) FirstID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = mq.Limit(1).IDs(ctx); err != nil {
 		return
 	}
@@ -96,7 +96,7 @@ func (mq *MonitorQuery) FirstID(ctx context.Context) (id int, err error) {
 }
 
 // FirstIDX is like FirstID, but panics if an error occurs.
-func (mq *MonitorQuery) FirstIDX(ctx context.Context) int {
+func (mq *MonitorQuery) FirstIDX(ctx context.Context) string {
 	id, err := mq.FirstID(ctx)
 	if err != nil && !IsNotFound(err) {
 		panic(err)
@@ -134,8 +134,8 @@ func (mq *MonitorQuery) OnlyX(ctx context.Context) *Monitor {
 // OnlyID is like Only, but returns the only Monitor ID in the query.
 // Returns a *NotSingularError when more than one Monitor ID is found.
 // Returns a *NotFoundError when no entities are found.
-func (mq *MonitorQuery) OnlyID(ctx context.Context) (id int, err error) {
-	var ids []int
+func (mq *MonitorQuery) OnlyID(ctx context.Context) (id string, err error) {
+	var ids []string
 	if ids, err = mq.Limit(2).IDs(ctx); err != nil {
 		return
 	}
@@ -151,7 +151,7 @@ func (mq *MonitorQuery) OnlyID(ctx context.Context) (id int, err error) {
 }
 
 // OnlyIDX is like OnlyID, but panics if an error occurs.
-func (mq *MonitorQuery) OnlyIDX(ctx context.Context) int {
+func (mq *MonitorQuery) OnlyIDX(ctx context.Context) string {
 	id, err := mq.OnlyID(ctx)
 	if err != nil {
 		panic(err)
@@ -177,8 +177,8 @@ func (mq *MonitorQuery) AllX(ctx context.Context) []*Monitor {
 }
 
 // IDs executes the query and returns a list of Monitor IDs.
-func (mq *MonitorQuery) IDs(ctx context.Context) ([]int, error) {
-	var ids []int
+func (mq *MonitorQuery) IDs(ctx context.Context) ([]string, error) {
+	var ids []string
 	if err := mq.Select(monitor.FieldID).Scan(ctx, &ids); err != nil {
 		return nil, err
 	}
@@ -186,7 +186,7 @@ func (mq *MonitorQuery) IDs(ctx context.Context) ([]int, error) {
 }
 
 // IDsX is like IDs, but panics if an error occurs.
-func (mq *MonitorQuery) IDsX(ctx context.Context) []int {
+func (mq *MonitorQuery) IDsX(ctx context.Context) []string {
 	ids, err := mq.IDs(ctx)
 	if err != nil {
 		panic(err)
@@ -253,12 +253,12 @@ func (mq *MonitorQuery) Clone() *MonitorQuery {
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Description string `json:"description,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Monitor.Query().
-//		GroupBy(monitor.FieldName).
+//		GroupBy(monitor.FieldDescription).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (mq *MonitorQuery) GroupBy(field string, fields ...string) *MonitorGroupBy {
@@ -281,11 +281,11 @@ func (mq *MonitorQuery) GroupBy(field string, fields ...string) *MonitorGroupBy 
 // Example:
 //
 //	var v []struct {
-//		Name string `json:"name,omitempty"`
+//		Description string `json:"description,omitempty"`
 //	}
 //
 //	client.Monitor.Query().
-//		Select(monitor.FieldName).
+//		Select(monitor.FieldDescription).
 //		Scan(ctx, &v)
 func (mq *MonitorQuery) Select(fields ...string) *MonitorSelect {
 	mq.fields = append(mq.fields, fields...)
@@ -367,7 +367,7 @@ func (mq *MonitorQuery) querySpec() *sqlgraph.QuerySpec {
 			Table:   monitor.Table,
 			Columns: monitor.Columns,
 			ID: &sqlgraph.FieldSpec{
-				Type:   field.TypeInt,
+				Type:   field.TypeString,
 				Column: monitor.FieldID,
 			},
 		},

@@ -10,7 +10,6 @@ import (
 )
 
 type User struct {
-	ID          int        `json:"id"`
 	Username    string     `json:"username"`
 	APIKey      string     `json:"api_key"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -25,8 +24,7 @@ func convertEntUserToDBUser(entUser *ent.User) *User {
 		return nil
 	}
 	return &User{
-		ID:          entUser.ID,
-		Username:    entUser.Username,
+		Username:    entUser.ID,
 		APIKey:      entUser.APIKey,
 		CreatedAt:   entUser.CreatedAt,
 		UpdatedAt:   entUser.UpdatedAt,
@@ -37,12 +35,7 @@ func convertEntUserToDBUser(entUser *ent.User) *User {
 }
 
 func (db *DatabaseConnection) GetUserByUsername(ctx context.Context, username string) (*User, error) {
-	u, err := db.client.User.Query().Where(user.Username(username)).First(ctx)
-	return convertEntUserToDBUser(u), err
-}
-
-func (db *DatabaseConnection) GetUserByID(ctx context.Context, id int) (*User, error) {
-	u, err := db.client.User.Query().Where(user.ID(id)).First(ctx)
+	u, err := db.client.User.Query().Where(user.ID(username)).First(ctx)
 	return convertEntUserToDBUser(u), err
 }
 
@@ -58,8 +51,8 @@ func (db *DatabaseConnection) ListUsers(ctx context.Context) ([]*User, error) {
 	return dbUsers, nil
 }
 
-func (db *DatabaseConnection) DeleteUser(ctx context.Context, id int) error {
-	return db.client.User.DeleteOneID(id).Exec(ctx)
+func (db *DatabaseConnection) DeleteUser(ctx context.Context, username string) error {
+	return db.client.User.DeleteOneID(username).Exec(ctx)
 }
 
 type CreateUserInput struct {
@@ -74,6 +67,10 @@ func (i CreateUserInput) validate() error {
 	}
 	if strings.Contains(i.Username, " ") {
 		return errors.New("username cannot contain spaces")
+	}
+	// Validate username only contains letters, numbers, and dashes
+	if !strings.ContainsAny(i.Username, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-") {
+		return errors.New("username can only contain letters, numbers, and dashes")
 	}
 	if i.APIKey == "" {
 		return errors.New("api_key is required")
@@ -98,7 +95,7 @@ func (db *DatabaseConnection) CreateUser(ctx context.Context, input CreateUserIn
 	if err := input.validate(); err != nil {
 		return nil, err
 	}
-	u, err := db.client.User.Create().SetUsername(input.Username).SetAPIKey(input.APIKey).SetRole(input.Role).Save(ctx)
+	u, err := db.client.User.Create().SetID(input.Username).SetAPIKey(input.APIKey).SetRole(input.Role).Save(ctx)
 	return convertEntUserToDBUser(u), err
 }
 
@@ -109,7 +106,7 @@ func (db *DatabaseConnection) UpdateUser(ctx context.Context, user *User) (*User
 	if err := validateRole(user.Role); err != nil {
 		return nil, err
 	}
-	q := db.client.User.UpdateOneID(user.ID).SetAPIKey(user.APIKey).SetRole(user.Role).SetLocked(user.Locked)
+	q := db.client.User.UpdateOneID(user.Username).SetAPIKey(user.APIKey).SetRole(user.Role).SetLocked(user.Locked)
 	if user.LockedUntil != nil {
 		q.SetLockedUntil(*user.LockedUntil)
 	}

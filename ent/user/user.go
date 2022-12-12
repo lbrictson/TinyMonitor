@@ -11,8 +11,6 @@ const (
 	Label = "user"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldUsername holds the string denoting the username field in the database.
-	FieldUsername = "username"
 	// FieldAPIKey holds the string denoting the api_key field in the database.
 	FieldAPIKey = "api_key"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -32,7 +30,6 @@ const (
 // Columns holds all SQL columns for user fields.
 var Columns = []string{
 	FieldID,
-	FieldUsername,
 	FieldAPIKey,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -62,4 +59,6 @@ var (
 	DefaultRole string
 	// DefaultLocked holds the default value on creation for the "locked" field.
 	DefaultLocked bool
+	// IDValidator is a validator for the "id" field. It is called by the builders before save.
+	IDValidator func(string) error
 )

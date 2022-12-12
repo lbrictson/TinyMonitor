@@ -14,11 +14,12 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 	return &cli.Command{
 		Name:        "user",
 		Description: "Manage users",
+		Usage:       "user -h",
 		Subcommands: []*cli.Command{
 			{
 				Name:        "list",
 				Description: "List all users",
-				Usage:       "List all users",
+				Usage:       "user list",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:     "output",
@@ -34,18 +35,9 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 			},
 			{
 				Name:        "get",
-				Description: "Get a user",
-				Usage:       "Get a user",
+				Description: "Get a user $username",
+				Usage:       "user get $username",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "username",
-						Aliases: []string{"u"},
-						Usage:   "The username of the user",
-					},
-					&cli.IntFlag{
-						Name:  "id",
-						Usage: "The id of the user",
-					},
 					&cli.StringFlag{
 						Name:     "output",
 						Aliases:  []string{"o"},
@@ -55,35 +47,19 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 					},
 				},
 				Action: func(context *cli.Context) error {
-					if context.IsSet("username") {
-						u := context.String("username")
-						return c.GetUser(nil, &u, context.String("output"))
-					}
-					if context.IsSet("id") {
-						i := context.Int("id")
-						return c.GetUser(&i, nil, context.String("output"))
-					}
-					return fmt.Errorf("must specify either username or id")
+					return c.GetUser(context.Args().First(), context.String("output"))
+
 				},
 			},
 			{
 				Name:        "edit",
 				Description: "Edit a user",
-				Usage:       "Edit a user",
+				Usage:       "user edit $username -r admin",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    "username",
-						Aliases: []string{"u"},
-						Usage:   "The username of the user",
-					},
-					&cli.IntFlag{
-						Name:  "id",
-						Usage: "The id of the user",
-					},
-					&cli.StringFlag{
-						Name:    "role",
-						Aliases: []string{"r"},
-						Usage:   "The role of the user",
+						Name:     "role",
+						Aliases:  []string{"r"},
+						Usage:    "The role of the user",
 						Required: true,
 					},
 					&cli.StringFlag{
@@ -95,31 +71,14 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 					},
 				},
 				Action: func(context *cli.Context) error {
-					if context.IsSet("username") {
-						u := context.String("username")
-						return c.ChangeUserRole(nil, &u, context.String("role"), context.String("output"))
-					}
-					if context.IsSet("id") {
-						i := context.Int("id")
-						return c.ChangeUserRole(&i, nil, context.String("role"),  context.String("output"))
-					}
-					return fmt.Errorf("must specify either username or id")
+					return c.ChangeUserRole(context.Args().First(), context.String("role"), context.String("output"))
 				},
 			},
 			{
 				Name:        "delete",
 				Description: "Delete a user",
-				Usage:       "Delete a user",
+				Usage:       "user delete $username",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "username",
-						Aliases: []string{"u"},
-						Usage:   "The username of the user",
-					},
-					&cli.IntFlag{
-						Name:  "id",
-						Usage: "The id of the user",
-					},
 					&cli.StringFlag{
 						Name:     "output",
 						Aliases:  []string{"o"},
@@ -129,32 +88,24 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 					},
 				},
 				Action: func(context *cli.Context) error {
-					if context.IsSet("username") {
-						u := context.String("username")
-						return c.DeleteUser(0, u, context.String("output"))
-					}
-					if context.IsSet("id") {
-						i := context.Int("id")
-						return c.DeleteUser(i, "", context.String("output"))
-					}
-					return fmt.Errorf("must specify either username or id")
+					return c.DeleteUser(context.Args().First(), context.String("output"))
 				},
 			},
 			{
 				Name:        "create",
 				Description: "Create a user",
-				Usage:       "Create a user",
+				Usage:       "user create -u $username -r admin",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
-						Name:    "username",
-						Aliases: []string{"u"},
-						Usage:   "The username of the user",
+						Name:     "username",
+						Aliases:  []string{"u"},
+						Usage:    "The username of the user",
 						Required: true,
 					},
 					&cli.StringFlag{
-						Name:  "role",
-						Usage: "The role of the user (read_only, write, admin)",
-						Aliases: []string{"r"},
+						Name:     "role",
+						Usage:    "The role of the user (read_only, write, admin)",
+						Aliases:  []string{"r"},
 						Required: true,
 					},
 					&cli.StringFlag{
@@ -175,9 +126,9 @@ func (c *APIClient) LoadUserCLICommands() *cli.Command {
 
 func printTextUserData(data []api.UserModel) {
 	table := uitable.New()
-	table.AddRow("ID", "Username", "Role", "Locked")
+	table.AddRow("Username", "Role", "Locked")
 	for _, x := range data {
-		table.AddRow(x.ID, x.Username, x.Role, x.LockedOut)
+		table.AddRow(x.Username, x.Role, x.LockedOut)
 	}
 	fmt.Println(table.String())
 }
@@ -199,40 +150,26 @@ func (c *APIClient) ListUsers(outputFormat string) error {
 	return nil
 }
 
-func (c *APIClient) GetUser(id *int, username *string, outputformat string) error {
-	if id != nil {
-		data, err := c.do(fmt.Sprintf("/api/v1/user/%v", *id), "GET", nil)
-		if err != nil {
-			return err
-		}
-		if outputformat == "json" {
-			return emitJSON(data)
-		}
-		fmt.Println(data)
-		return nil
+func (c *APIClient) GetUser(username string, outputformat string) error {
+	usersAPIData, err := c.do("/api/v1/user", "GET", nil)
+	if err != nil {
+		return err
 	}
-	if username != nil {
-		usersAPIData, err := c.do("/api/v1/user", "GET", nil)
-		if err != nil {
-			return err
-		}
-		users := []api.UserModel{}
-		err = json.Unmarshal(usersAPIData, &users)
-		if err != nil {
-			return err
-		}
-		for _, x := range users {
-			if x.Username == *username {
-				if outputformat == "json" {
-					return emitJSON(x)
-				}
-				printTextUserData([]api.UserModel{x})
-				return nil
+	users := []api.UserModel{}
+	err = json.Unmarshal(usersAPIData, &users)
+	if err != nil {
+		return err
+	}
+	for _, x := range users {
+		if x.Username == username {
+			if outputformat == "json" {
+				return emitJSON(x)
 			}
+			printTextUserData([]api.UserModel{x})
+			return nil
 		}
-		return errors.New("user not found")
 	}
-	return errors.New("id or username is required")
+	return errors.New("user not found")
 }
 
 func (c *APIClient) CreateUser(username string, role string, outputformat string) error {
@@ -260,69 +197,16 @@ func (c *APIClient) CreateUser(username string, role string, outputformat string
 	return nil
 }
 
-func (c *APIClient) DeleteUser(id int, username string, outputformat string) error {
-	if id != 0 && username != "" {
-		return errors.New("only id or username can be provided, not both")
-	}
-	if username != "" {
-		found := false
-		usersAPIData, err := c.do("/api/v1/user", "GET", nil)
-		if err != nil {
-			return err
-		}
-		users := []api.UserModel{}
-		err = json.Unmarshal(usersAPIData, &users)
-		if err != nil {
-			return err
-		}
-		for _, x := range users {
-			if x.Username == username {
-				id = x.ID
-				found = true
-				break
-			}
-		}
-		if !found {
-			return errors.New("user not found")
-		}
-	}
-	_, err := c.do(fmt.Sprintf("/api/v1/user/%v", id), "DELETE", nil)
+func (c *APIClient) DeleteUser(username string, outputformat string) error {
+	_, err := c.do(fmt.Sprintf("/api/v1/user/%v", username), "DELETE", nil)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("User %v deleted successfully\n", id)
+	fmt.Printf("User %v deleted successfully\n", username)
 	return nil
 }
 
-func (c *APIClient) ChangeUserRole(id *int, username *string, newRole string, outputformat string) error {
-	if username != nil && id != nil {
-		return errors.New("only id or username can be provided, not both")
-	}
-	if username != nil {
-		found := false
-		usersAPIData, err := c.do("/api/v1/user", "GET", nil)
-		if err != nil {
-			return err
-		}
-		users := []api.UserModel{}
-		err = json.Unmarshal(usersAPIData, &users)
-		if err != nil {
-			return err
-		}
-		for _, x := range users {
-			if x.Username == *username {
-				id = &x.ID
-				found = true
-				break
-			}
-		}
-		if !found {
-			return errors.New("user not found")
-		}
-	}
-	if id == nil {
-		return errors.New("id or username is required")
-	}
+func (c *APIClient) ChangeUserRole(username string, newRole string, outputformat string) error {
 	apiInput := api.UpdateUserRequest{
 		Role:      &newRole,
 		LockedOut: nil,
@@ -331,10 +215,10 @@ func (c *APIClient) ChangeUserRole(id *int, username *string, newRole string, ou
 	if err != nil {
 		return err
 	}
-	_, err = c.do(fmt.Sprintf("/api/v1/user/%v", *id), "PATCH", bytes.NewBuffer(b))
+	_, err = c.do(fmt.Sprintf("/api/v1/user/%v", username), "PATCH", bytes.NewBuffer(b))
 	if err != nil {
 		return err
 	}
-	fmt.Printf("User %v role changed successfully to %v\n", *id, newRole)
+	fmt.Printf("User %v role changed successfully to %v\n", username, newRole)
 	return nil
 }

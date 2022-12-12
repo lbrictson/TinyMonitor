@@ -16,9 +16,7 @@ import (
 type Monitor struct {
 	config `json:"-"`
 	// ID of the ent.
-	ID int `json:"id,omitempty"`
-	// Name holds the value of the "name" field.
-	Name string `json:"name,omitempty"`
+	ID string `json:"id,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
 	// Status holds the value of the "status" field.
@@ -39,6 +37,12 @@ type Monitor struct {
 	IntervalSeconds int `json:"interval_seconds,omitempty"`
 	// Paused holds the value of the "paused" field.
 	Paused bool `json:"paused,omitempty"`
+	// FailureCount holds the value of the "failure_count" field.
+	FailureCount int `json:"failure_count,omitempty"`
+	// SuccessThreshold holds the value of the "success_threshold" field.
+	SuccessThreshold int `json:"success_threshold,omitempty"`
+	// FailureThreshold holds the value of the "failure_threshold" field.
+	FailureThreshold int `json:"failure_threshold,omitempty"`
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -50,9 +54,9 @@ func (*Monitor) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case monitor.FieldPaused:
 			values[i] = new(sql.NullBool)
-		case monitor.FieldID, monitor.FieldIntervalSeconds:
+		case monitor.FieldIntervalSeconds, monitor.FieldFailureCount, monitor.FieldSuccessThreshold, monitor.FieldFailureThreshold:
 			values[i] = new(sql.NullInt64)
-		case monitor.FieldName, monitor.FieldDescription, monitor.FieldStatus, monitor.FieldMonitorType:
+		case monitor.FieldID, monitor.FieldDescription, monitor.FieldStatus, monitor.FieldMonitorType:
 			values[i] = new(sql.NullString)
 		case monitor.FieldLastCheckedAt, monitor.FieldStatusLastChangedAt, monitor.FieldCreatedAt, monitor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -72,16 +76,10 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 	for i := range columns {
 		switch columns[i] {
 		case monitor.FieldID:
-			value, ok := values[i].(*sql.NullInt64)
-			if !ok {
-				return fmt.Errorf("unexpected type %T for field id", value)
-			}
-			m.ID = int(value.Int64)
-		case monitor.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field name", values[i])
+				return fmt.Errorf("unexpected type %T for field id", values[i])
 			} else if value.Valid {
-				m.Name = value.String
+				m.ID = value.String
 			}
 		case monitor.FieldDescription:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -146,6 +144,24 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				m.Paused = value.Bool
 			}
+		case monitor.FieldFailureCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field failure_count", values[i])
+			} else if value.Valid {
+				m.FailureCount = int(value.Int64)
+			}
+		case monitor.FieldSuccessThreshold:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field success_threshold", values[i])
+			} else if value.Valid {
+				m.SuccessThreshold = int(value.Int64)
+			}
+		case monitor.FieldFailureThreshold:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field failure_threshold", values[i])
+			} else if value.Valid {
+				m.FailureThreshold = int(value.Int64)
+			}
 		}
 	}
 	return nil
@@ -174,9 +190,6 @@ func (m *Monitor) String() string {
 	var builder strings.Builder
 	builder.WriteString("Monitor(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
-	builder.WriteString("name=")
-	builder.WriteString(m.Name)
-	builder.WriteString(", ")
 	builder.WriteString("description=")
 	builder.WriteString(m.Description)
 	builder.WriteString(", ")
@@ -208,6 +221,15 @@ func (m *Monitor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("paused=")
 	builder.WriteString(fmt.Sprintf("%v", m.Paused))
+	builder.WriteString(", ")
+	builder.WriteString("failure_count=")
+	builder.WriteString(fmt.Sprintf("%v", m.FailureCount))
+	builder.WriteString(", ")
+	builder.WriteString("success_threshold=")
+	builder.WriteString(fmt.Sprintf("%v", m.SuccessThreshold))
+	builder.WriteString(", ")
+	builder.WriteString("failure_threshold=")
+	builder.WriteString(fmt.Sprintf("%v", m.FailureThreshold))
 	builder.WriteByte(')')
 	return builder.String()
 }
