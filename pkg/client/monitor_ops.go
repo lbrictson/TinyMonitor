@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/fatih/color"
 	"github.com/gosuri/uitable"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
 	"github.com/urfave/cli/v2"
@@ -109,10 +110,14 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 }
 
 func printTextMonitorData(data []api.MonitorModel) {
+	red := color.New(color.FgRed)
 	table := uitable.New()
 	table.AddRow("Name", "Type", "Interval", "Status", "Last Checked")
 	for _, x := range data {
-		table.AddRow(x.Name, x.MonitorType, x.IntervalSeconds, x.Status, x.LastCheckedFriendly)
+		if x.Status == "Down" {
+			x.Status = red.Sprint(x.Status)
+		}
+		table.AddRow(x.Name, x.MonitorType, x.IntervalSeconds, fmt.Sprintf("%v (%v)", x.Status, x.StatusLastChangedFriendly), x.LastCheckedFriendly)
 	}
 	fmt.Println(table.String())
 }
