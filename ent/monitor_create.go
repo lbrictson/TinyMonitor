@@ -34,6 +34,20 @@ func (mc *MonitorCreate) SetNillableDescription(s *string) *MonitorCreate {
 	return mc
 }
 
+// SetCurrentDownReason sets the "current_down_reason" field.
+func (mc *MonitorCreate) SetCurrentDownReason(s string) *MonitorCreate {
+	mc.mutation.SetCurrentDownReason(s)
+	return mc
+}
+
+// SetNillableCurrentDownReason sets the "current_down_reason" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableCurrentDownReason(s *string) *MonitorCreate {
+	if s != nil {
+		mc.SetCurrentDownReason(*s)
+	}
+	return mc
+}
+
 // SetStatus sets the "status" field.
 func (mc *MonitorCreate) SetStatus(s string) *MonitorCreate {
 	mc.mutation.SetStatus(s)
@@ -265,6 +279,10 @@ func (mc *MonitorCreate) defaults() {
 		v := monitor.DefaultDescription
 		mc.mutation.SetDescription(v)
 	}
+	if _, ok := mc.mutation.CurrentDownReason(); !ok {
+		v := monitor.DefaultCurrentDownReason
+		mc.mutation.SetCurrentDownReason(v)
+	}
 	if _, ok := mc.mutation.StatusLastChangedAt(); !ok {
 		v := monitor.DefaultStatusLastChangedAt()
 		mc.mutation.SetStatusLastChangedAt(v)
@@ -303,6 +321,9 @@ func (mc *MonitorCreate) defaults() {
 func (mc *MonitorCreate) check() error {
 	if _, ok := mc.mutation.Description(); !ok {
 		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "Monitor.description"`)}
+	}
+	if _, ok := mc.mutation.CurrentDownReason(); !ok {
+		return &ValidationError{Name: "current_down_reason", err: errors.New(`ent: missing required field "Monitor.current_down_reason"`)}
 	}
 	if _, ok := mc.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "Monitor.status"`)}
@@ -381,6 +402,10 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.Description(); ok {
 		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
 		_node.Description = value
+	}
+	if value, ok := mc.mutation.CurrentDownReason(); ok {
+		_spec.SetField(monitor.FieldCurrentDownReason, field.TypeString, value)
+		_node.CurrentDownReason = value
 	}
 	if value, ok := mc.mutation.Status(); ok {
 		_spec.SetField(monitor.FieldStatus, field.TypeString, value)

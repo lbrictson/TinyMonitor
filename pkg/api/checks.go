@@ -4,8 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/sirupsen/logrus"
+	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
@@ -49,6 +51,70 @@ func performMonitoringChecks(name string, database *db.DatabaseConnection, logge
 	}
 }
 
+func processMonitorCheckDownResult(failureExplanation string, monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
+	// Increment the failure count
+	now := time.Now()
+	fCount := monitor.FailureCount + 1
+	// If the monitor is already down, do nothing
+	if monitor.Status == "Down" {
+		_, err := database.UpdateMonitor(context.Background(), monitor.Name, db.UpdateMonitorInput{
+			LastCheckedAt:       &now,
+			StatusLastChangedAt: nil,
+			Paused:              nil,
+			Description:         nil,
+			FailureCount:        &fCount,
+		})
+		if err != nil {
+			logger.Warnf("Failed to update monitor %s: %v", monitor.Name, err)
+		}
+		return
+	} else {
+		down := "Down"
+		changes := db.UpdateMonitorInput{
+			Status:              nil,
+			LastCheckedAt:       &now,
+			StatusLastChangedAt: nil,
+			Paused:              nil,
+			Description:         nil,
+			FailureCount:        &fCount,
+		}
+		// If the monitor is up, update the database
+		if fCount >= monitor.FailureThreshold {
+			// Only update to down if the failure threshold has been reached or breached
+			changes.Status = &down
+			changes.StatusLastChangedAt = &now
+		}
+		_, err := database.UpdateMonitor(context.Background(), monitor.Name, changes)
+		if err != nil {
+			logger.Warnf("Failed to update monitor %s: %v", monitor.Name, err)
+		}
+	}
+}
+
+func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
+	// Reset the failure count
+	now := time.Now()
+	zero := 0
+
+	changes := db.UpdateMonitorInput{
+		LastCheckedAt:       &now,
+		StatusLastChangedAt: nil,
+		Paused:              nil,
+		Description:         nil,
+		FailureCount:        &zero,
+	}
+	// If the monitor is down, update the database
+	if monitor.Status == "Down" {
+		ok := "Ok"
+		changes.Status = &ok
+		changes.StatusLastChangedAt = &now
+	}
+	_, err := database.UpdateMonitor(context.Background(), monitor.Name, changes)
+	if err != nil {
+		logger.Warnf("Failed to update monitor %s: %v", monitor.Name, err)
+	}
+}
+
 func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
 	specificConfig := HTTPMonitorConfig{}
 	b, err := json.Marshal(monitor.Config)
@@ -64,6 +130,7 @@ func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logge
 	req, err := http.NewRequest(strings.ToUpper(specificConfig.Method), specificConfig.URL, strings.NewReader(specificConfig.RequestBody))
 	if err != nil {
 		logger.Warnf("Failed to create request for monitor %s: %v", monitor.Name, err)
+		processMonitorCheckDownResult(err.Error(), monitor, database, logger)
 		return
 	}
 	for k, v := range specificConfig.Headers {
@@ -76,22 +143,41 @@ func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logge
 		}
 	}
 	client.Timeout = time.Duration(specificConfig.TimeoutMS) * time.Millisecond
+	start := time.Now()
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logger.Warnf("Failed to perform HTTP request for monitor %s: %v", monitor.Name, err)
-		now := time.Now()
-		status := "Down"
-		fCount := monitor.FailureCount + 1
-		database.UpdateMonitor(context.Background(), monitor.Name, db.UpdateMonitorInput{
-			Status:              &status,
-			LastCheckedAt:       &now,
-			StatusLastChangedAt: &now,
-			Paused:              nil,
-			Description:         nil,
-			FailureCount:        &fCount,
-		})
+		processMonitorCheckDownResult(err.Error(), monitor, database, logger)
 		return
 	}
 	defer resp.Body.Close()
-
+	// Make sure request didn't breach timeout expectation
+	if time.Since(start) > time.Duration(specificConfig.TimeoutMS)*time.Millisecond {
+		logger.Warnf("HTTP request for monitor %s took longer than expected", monitor.Name)
+		processMonitorCheckDownResult(fmt.Sprintf("Requested breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger)
+		return
+	}
+	// Check the response code
+	if resp.StatusCode != specificConfig.ExpectResponseCode {
+		logger.Warnf("HTTP request for monitor %s returned unexpected response code", monitor.Name)
+		processMonitorCheckDownResult(fmt.Sprintf("Expected response code %v, got %v", specificConfig.ExpectResponseCode, resp.StatusCode), monitor, database, logger)
+		return
+	}
+	// Check the body if need be
+	if specificConfig.BodyContains != "" {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logger.Warnf("Failed to read response body for monitor %s: %v", monitor.Name, err)
+			processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+			return
+		}
+		if !strings.Contains(string(body), specificConfig.BodyContains) {
+			logger.Warnf("HTTP request for monitor %s returned unexpected response body", monitor.Name)
+			processMonitorCheckDownResult(fmt.Sprintf("Expected body to contain %v, got %v", specificConfig.BodyContains, string(body)), monitor, database, logger)
+			return
+		}
+	}
+	// If we got here, the monitor is up
+	processMonitorOkResult(monitor, database, logger)
+	return
 }

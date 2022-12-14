@@ -12,6 +12,7 @@ var (
 	MonitorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 50},
 		{Name: "description", Type: field.TypeString, Default: ""},
+		{Name: "current_down_reason", Type: field.TypeString, Default: ""},
 		{Name: "status", Type: field.TypeString},
 		{Name: "last_checked_at", Type: field.TypeTime, Nullable: true},
 		{Name: "status_last_changed_at", Type: field.TypeTime},

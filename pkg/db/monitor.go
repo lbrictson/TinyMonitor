@@ -12,6 +12,7 @@ import (
 type BaseMonitor struct {
 	Name                string                 `json:"name"`
 	Description         string                 `json:"description"`
+	CurrentOutageReason string                 `json:"current_outage_reason"`
 	IntervalSeconds     int                    `json:"interval_seconds"`
 	Status              string                 `json:"status"`
 	LastCheckedAt       *time.Time             `json:"last_checked_at"`
@@ -33,6 +34,7 @@ func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
 	return &BaseMonitor{
 		Name:                entMonitor.ID,
 		Description:         entMonitor.Description,
+		CurrentOutageReason: entMonitor.CurrentDownReason,
 		IntervalSeconds:     entMonitor.IntervalSeconds,
 		Status:              entMonitor.Status,
 		LastCheckedAt:       entMonitor.LastCheckedAt,
@@ -151,6 +153,7 @@ type UpdateMonitorInput struct {
 	FailureCount        *int                   `json:"failure_count"`
 	SuccessThreshold    *int                   `json:"success_threshold"`
 	FailureThreshold    *int                   `json:"failure_threshold"`
+	CurrentOutageReason *string                `json:"current_outage_reason"`
 }
 
 func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, name string, input UpdateMonitorInput) (*BaseMonitor, error) {
@@ -184,6 +187,9 @@ func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, name string, in
 	}
 	if input.FailureThreshold != nil {
 		update = update.SetFailureThreshold(*input.FailureThreshold)
+	}
+	if input.CurrentOutageReason != nil {
+		update = update.SetCurrentDownReason(*input.CurrentOutageReason)
 	}
 	m, err := update.Save(ctx)
 	return convertEntMonitorToDBMonitor(m), err

@@ -16,6 +16,7 @@ func (Monitor) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("id").StorageKey("id").MaxLen(50).NotEmpty().Immutable(),
 		field.String("description").Default(""),
+		field.String("current_down_reason").Default(""),
 		field.String("status"),
 		field.Time("last_checked_at").Nillable().Optional(),
 		field.Time("status_last_changed_at").Default(time.Now),

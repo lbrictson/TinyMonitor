@@ -42,6 +42,20 @@ func (mu *MonitorUpdate) SetNillableDescription(s *string) *MonitorUpdate {
 	return mu
 }
 
+// SetCurrentDownReason sets the "current_down_reason" field.
+func (mu *MonitorUpdate) SetCurrentDownReason(s string) *MonitorUpdate {
+	mu.mutation.SetCurrentDownReason(s)
+	return mu
+}
+
+// SetNillableCurrentDownReason sets the "current_down_reason" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableCurrentDownReason(s *string) *MonitorUpdate {
+	if s != nil {
+		mu.SetCurrentDownReason(*s)
+	}
+	return mu
+}
+
 // SetStatus sets the "status" field.
 func (mu *MonitorUpdate) SetStatus(s string) *MonitorUpdate {
 	mu.mutation.SetStatus(s)
@@ -295,6 +309,9 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	if value, ok := mu.mutation.Description(); ok {
 		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
 	}
+	if value, ok := mu.mutation.CurrentDownReason(); ok {
+		_spec.SetField(monitor.FieldCurrentDownReason, field.TypeString, value)
+	}
 	if value, ok := mu.mutation.Status(); ok {
 		_spec.SetField(monitor.FieldStatus, field.TypeString, value)
 	}
@@ -372,6 +389,20 @@ func (muo *MonitorUpdateOne) SetDescription(s string) *MonitorUpdateOne {
 func (muo *MonitorUpdateOne) SetNillableDescription(s *string) *MonitorUpdateOne {
 	if s != nil {
 		muo.SetDescription(*s)
+	}
+	return muo
+}
+
+// SetCurrentDownReason sets the "current_down_reason" field.
+func (muo *MonitorUpdateOne) SetCurrentDownReason(s string) *MonitorUpdateOne {
+	muo.mutation.SetCurrentDownReason(s)
+	return muo
+}
+
+// SetNillableCurrentDownReason sets the "current_down_reason" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableCurrentDownReason(s *string) *MonitorUpdateOne {
+	if s != nil {
+		muo.SetCurrentDownReason(*s)
 	}
 	return muo
 }
@@ -658,6 +689,9 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 	}
 	if value, ok := muo.mutation.Description(); ok {
 		_spec.SetField(monitor.FieldDescription, field.TypeString, value)
+	}
+	if value, ok := muo.mutation.CurrentDownReason(); ok {
+		_spec.SetField(monitor.FieldCurrentDownReason, field.TypeString, value)
 	}
 	if value, ok := muo.mutation.Status(); ok {
 		_spec.SetField(monitor.FieldStatus, field.TypeString, value)

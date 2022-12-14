@@ -87,6 +87,13 @@ func Description(v string) predicate.Monitor {
 	})
 }
 
+// CurrentDownReason applies equality check predicate on the "current_down_reason" field. It's identical to CurrentDownReasonEQ.
+func CurrentDownReason(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCurrentDownReason), v))
+	})
+}
+
 // Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
 func Status(v string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
@@ -260,6 +267,105 @@ func DescriptionEqualFold(v string) predicate.Monitor {
 func DescriptionContainsFold(v string) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.ContainsFold(s.C(FieldDescription), v))
+	})
+}
+
+// CurrentDownReasonEQ applies the EQ predicate on the "current_down_reason" field.
+func CurrentDownReasonEQ(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonNEQ applies the NEQ predicate on the "current_down_reason" field.
+func CurrentDownReasonNEQ(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonIn applies the In predicate on the "current_down_reason" field.
+func CurrentDownReasonIn(vs ...string) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldCurrentDownReason), v...))
+	})
+}
+
+// CurrentDownReasonNotIn applies the NotIn predicate on the "current_down_reason" field.
+func CurrentDownReasonNotIn(vs ...string) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldCurrentDownReason), v...))
+	})
+}
+
+// CurrentDownReasonGT applies the GT predicate on the "current_down_reason" field.
+func CurrentDownReasonGT(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonGTE applies the GTE predicate on the "current_down_reason" field.
+func CurrentDownReasonGTE(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonLT applies the LT predicate on the "current_down_reason" field.
+func CurrentDownReasonLT(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonLTE applies the LTE predicate on the "current_down_reason" field.
+func CurrentDownReasonLTE(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonContains applies the Contains predicate on the "current_down_reason" field.
+func CurrentDownReasonContains(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.Contains(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonHasPrefix applies the HasPrefix predicate on the "current_down_reason" field.
+func CurrentDownReasonHasPrefix(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.HasPrefix(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonHasSuffix applies the HasSuffix predicate on the "current_down_reason" field.
+func CurrentDownReasonHasSuffix(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.HasSuffix(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonEqualFold applies the EqualFold predicate on the "current_down_reason" field.
+func CurrentDownReasonEqualFold(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EqualFold(s.C(FieldCurrentDownReason), v))
+	})
+}
+
+// CurrentDownReasonContainsFold applies the ContainsFold predicate on the "current_down_reason" field.
+func CurrentDownReasonContainsFold(v string) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.ContainsFold(s.C(FieldCurrentDownReason), v))
 	})
 }
 

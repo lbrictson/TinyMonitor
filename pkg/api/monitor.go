@@ -14,6 +14,7 @@ import (
 type MonitorModel struct {
 	Name                      string                 `json:"name"`
 	Description               string                 `json:"description"`
+	CurrentOutageReason       string                 `json:"current_outage_reason"`
 	IntervalSeconds           int                    `json:"interval_seconds"`
 	Status                    string                 `json:"status"`
 	LastCheckedAt             *time.Time             `json:"last_checked_at"`
@@ -41,6 +42,7 @@ func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
 	return &MonitorModel{
 		Name:                      dbMonitor.Name,
 		Description:               dbMonitor.Description,
+		CurrentOutageReason:       dbMonitor.CurrentOutageReason,
 		IntervalSeconds:           dbMonitor.IntervalSeconds,
 		Status:                    dbMonitor.Status,
 		LastCheckedAt:             dbMonitor.LastCheckedAt,

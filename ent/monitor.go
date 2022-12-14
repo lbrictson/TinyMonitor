@@ -19,6 +19,8 @@ type Monitor struct {
 	ID string `json:"id,omitempty"`
 	// Description holds the value of the "description" field.
 	Description string `json:"description,omitempty"`
+	// CurrentDownReason holds the value of the "current_down_reason" field.
+	CurrentDownReason string `json:"current_down_reason,omitempty"`
 	// Status holds the value of the "status" field.
 	Status string `json:"status,omitempty"`
 	// LastCheckedAt holds the value of the "last_checked_at" field.
@@ -56,7 +58,7 @@ func (*Monitor) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case monitor.FieldIntervalSeconds, monitor.FieldFailureCount, monitor.FieldSuccessThreshold, monitor.FieldFailureThreshold:
 			values[i] = new(sql.NullInt64)
-		case monitor.FieldID, monitor.FieldDescription, monitor.FieldStatus, monitor.FieldMonitorType:
+		case monitor.FieldID, monitor.FieldDescription, monitor.FieldCurrentDownReason, monitor.FieldStatus, monitor.FieldMonitorType:
 			values[i] = new(sql.NullString)
 		case monitor.FieldLastCheckedAt, monitor.FieldStatusLastChangedAt, monitor.FieldCreatedAt, monitor.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -86,6 +88,12 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field description", values[i])
 			} else if value.Valid {
 				m.Description = value.String
+			}
+		case monitor.FieldCurrentDownReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field current_down_reason", values[i])
+			} else if value.Valid {
+				m.CurrentDownReason = value.String
 			}
 		case monitor.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -192,6 +200,9 @@ func (m *Monitor) String() string {
 	builder.WriteString(fmt.Sprintf("id=%v, ", m.ID))
 	builder.WriteString("description=")
 	builder.WriteString(m.Description)
+	builder.WriteString(", ")
+	builder.WriteString("current_down_reason=")
+	builder.WriteString(m.CurrentDownReason)
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(m.Status)

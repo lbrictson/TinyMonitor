@@ -36,6 +36,7 @@ type MonitorMutation struct {
 	typ                    string
 	id                     *string
 	description            *string
+	current_down_reason    *string
 	status                 *string
 	last_checked_at        *time.Time
 	status_last_changed_at *time.Time
@@ -196,6 +197,42 @@ func (m *MonitorMutation) OldDescription(ctx context.Context) (v string, err err
 // ResetDescription resets all changes to the "description" field.
 func (m *MonitorMutation) ResetDescription() {
 	m.description = nil
+}
+
+// SetCurrentDownReason sets the "current_down_reason" field.
+func (m *MonitorMutation) SetCurrentDownReason(s string) {
+	m.current_down_reason = &s
+}
+
+// CurrentDownReason returns the value of the "current_down_reason" field in the mutation.
+func (m *MonitorMutation) CurrentDownReason() (r string, exists bool) {
+	v := m.current_down_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrentDownReason returns the old "current_down_reason" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldCurrentDownReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrentDownReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrentDownReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrentDownReason: %w", err)
+	}
+	return oldValue.CurrentDownReason, nil
+}
+
+// ResetCurrentDownReason resets all changes to the "current_down_reason" field.
+func (m *MonitorMutation) ResetCurrentDownReason() {
+	m.current_down_reason = nil
 }
 
 // SetStatus sets the "status" field.
@@ -742,9 +779,12 @@ func (m *MonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MonitorMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.description != nil {
 		fields = append(fields, monitor.FieldDescription)
+	}
+	if m.current_down_reason != nil {
+		fields = append(fields, monitor.FieldCurrentDownReason)
 	}
 	if m.status != nil {
 		fields = append(fields, monitor.FieldStatus)
@@ -792,6 +832,8 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case monitor.FieldDescription:
 		return m.Description()
+	case monitor.FieldCurrentDownReason:
+		return m.CurrentDownReason()
 	case monitor.FieldStatus:
 		return m.Status()
 	case monitor.FieldLastCheckedAt:
@@ -827,6 +869,8 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 	switch name {
 	case monitor.FieldDescription:
 		return m.OldDescription(ctx)
+	case monitor.FieldCurrentDownReason:
+		return m.OldCurrentDownReason(ctx)
 	case monitor.FieldStatus:
 		return m.OldStatus(ctx)
 	case monitor.FieldLastCheckedAt:
@@ -866,6 +910,13 @@ func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetDescription(v)
+		return nil
+	case monitor.FieldCurrentDownReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrentDownReason(v)
 		return nil
 	case monitor.FieldStatus:
 		v, ok := value.(string)
@@ -1062,6 +1113,9 @@ func (m *MonitorMutation) ResetField(name string) error {
 	switch name {
 	case monitor.FieldDescription:
 		m.ResetDescription()
+		return nil
+	case monitor.FieldCurrentDownReason:
+		m.ResetCurrentDownReason()
 		return nil
 	case monitor.FieldStatus:
 		m.ResetStatus()

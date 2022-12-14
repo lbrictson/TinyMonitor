@@ -20,38 +20,42 @@ func init() {
 	monitorDescDescription := monitorFields[1].Descriptor()
 	// monitor.DefaultDescription holds the default value on creation for the description field.
 	monitor.DefaultDescription = monitorDescDescription.Default.(string)
+	// monitorDescCurrentDownReason is the schema descriptor for current_down_reason field.
+	monitorDescCurrentDownReason := monitorFields[2].Descriptor()
+	// monitor.DefaultCurrentDownReason holds the default value on creation for the current_down_reason field.
+	monitor.DefaultCurrentDownReason = monitorDescCurrentDownReason.Default.(string)
 	// monitorDescStatusLastChangedAt is the schema descriptor for status_last_changed_at field.
-	monitorDescStatusLastChangedAt := monitorFields[4].Descriptor()
+	monitorDescStatusLastChangedAt := monitorFields[5].Descriptor()
 	// monitor.DefaultStatusLastChangedAt holds the default value on creation for the status_last_changed_at field.
 	monitor.DefaultStatusLastChangedAt = monitorDescStatusLastChangedAt.Default.(func() time.Time)
 	// monitorDescCreatedAt is the schema descriptor for created_at field.
-	monitorDescCreatedAt := monitorFields[6].Descriptor()
+	monitorDescCreatedAt := monitorFields[7].Descriptor()
 	// monitor.DefaultCreatedAt holds the default value on creation for the created_at field.
 	monitor.DefaultCreatedAt = monitorDescCreatedAt.Default.(func() time.Time)
 	// monitorDescUpdatedAt is the schema descriptor for updated_at field.
-	monitorDescUpdatedAt := monitorFields[7].Descriptor()
+	monitorDescUpdatedAt := monitorFields[8].Descriptor()
 	// monitor.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	monitor.DefaultUpdatedAt = monitorDescUpdatedAt.Default.(func() time.Time)
 	// monitor.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	monitor.UpdateDefaultUpdatedAt = monitorDescUpdatedAt.UpdateDefault.(func() time.Time)
 	// monitorDescIntervalSeconds is the schema descriptor for interval_seconds field.
-	monitorDescIntervalSeconds := monitorFields[9].Descriptor()
+	monitorDescIntervalSeconds := monitorFields[10].Descriptor()
 	// monitor.DefaultIntervalSeconds holds the default value on creation for the interval_seconds field.
 	monitor.DefaultIntervalSeconds = monitorDescIntervalSeconds.Default.(int)
 	// monitorDescPaused is the schema descriptor for paused field.
-	monitorDescPaused := monitorFields[10].Descriptor()
+	monitorDescPaused := monitorFields[11].Descriptor()
 	// monitor.DefaultPaused holds the default value on creation for the paused field.
 	monitor.DefaultPaused = monitorDescPaused.Default.(bool)
 	// monitorDescFailureCount is the schema descriptor for failure_count field.
-	monitorDescFailureCount := monitorFields[11].Descriptor()
+	monitorDescFailureCount := monitorFields[12].Descriptor()
 	// monitor.DefaultFailureCount holds the default value on creation for the failure_count field.
 	monitor.DefaultFailureCount = monitorDescFailureCount.Default.(int)
 	// monitorDescSuccessThreshold is the schema descriptor for success_threshold field.
-	monitorDescSuccessThreshold := monitorFields[12].Descriptor()
+	monitorDescSuccessThreshold := monitorFields[13].Descriptor()
 	// monitor.DefaultSuccessThreshold holds the default value on creation for the success_threshold field.
 	monitor.DefaultSuccessThreshold = monitorDescSuccessThreshold.Default.(int)
 	// monitorDescFailureThreshold is the schema descriptor for failure_threshold field.
-	monitorDescFailureThreshold := monitorFields[13].Descriptor()
+	monitorDescFailureThreshold := monitorFields[14].Descriptor()
 	// monitor.DefaultFailureThreshold holds the default value on creation for the failure_threshold field.
 	monitor.DefaultFailureThreshold = monitorDescFailureThreshold.Default.(int)
 	// monitorDescID is the schema descriptor for id field.

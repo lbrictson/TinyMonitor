@@ -13,6 +13,8 @@ const (
 	FieldID = "id"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
+	// FieldCurrentDownReason holds the string denoting the current_down_reason field in the database.
+	FieldCurrentDownReason = "current_down_reason"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldLastCheckedAt holds the string denoting the last_checked_at field in the database.
@@ -45,6 +47,7 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldDescription,
+	FieldCurrentDownReason,
 	FieldStatus,
 	FieldLastCheckedAt,
 	FieldStatusLastChangedAt,
@@ -72,6 +75,8 @@ func ValidColumn(column string) bool {
 var (
 	// DefaultDescription holds the default value on creation for the "description" field.
 	DefaultDescription string
+	// DefaultCurrentDownReason holds the default value on creation for the "current_down_reason" field.
+	DefaultCurrentDownReason string
 	// DefaultStatusLastChangedAt holds the default value on creation for the "status_last_changed_at" field.
 	DefaultStatusLastChangedAt func() time.Time
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
