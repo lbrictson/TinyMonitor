@@ -85,8 +85,24 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 				},
 			},
 			{
+				Name:        "delete",
+				Description: "delete monitor",
+				Usage:       "monitor delete $name",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.DeleteMonitor(context.Args().First(), context.String("output"))
+				},
+			},
+			{
 				Name:        "apply",
-				Description: "edit/create monitor",
+				Description: "edit/create monitor via file",
 				Usage:       "monitor apply -f $fileLocation",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
@@ -244,5 +260,14 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 		return err
 	}
 	fmt.Println("monitor updated")
+	return nil
+}
+
+func (c *APIClient) DeleteMonitor(name string, outputformat string) error {
+	_, err := c.do(fmt.Sprintf("/api/v1/monitor/%v", name), "DELETE", nil)
+	if err != nil {
+		return err
+	}
+	fmt.Println("monitor deleted")
 	return nil
 }

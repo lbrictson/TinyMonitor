@@ -116,11 +116,13 @@ func (s *Server) getMonitor(c echo.Context) error {
 }
 
 type CreateMonitorInput struct {
-	Name            string                 `json:"name"`
-	Description     string                 `json:"description"`
-	IntervalSeconds int                    `json:"interval_seconds"`
-	MonitorType     string                 `json:"monitor_type"`
-	Config          map[string]interface{} `json:"config"`
+	Name             string                 `json:"name"`
+	Description      string                 `json:"description"`
+	IntervalSeconds  int                    `json:"interval_seconds"`
+	MonitorType      string                 `json:"monitor_type"`
+	Config           map[string]interface{} `json:"config"`
+	SuccessThreshold int                    `json:"success_threshold"`
+	FailureThreshold int                    `json:"failure_threshold"`
 }
 
 func (c *CreateMonitorInput) Validate() error {
@@ -135,6 +137,12 @@ func (c *CreateMonitorInput) Validate() error {
 	}
 	if c.Config == nil {
 		return errors.New("config is required")
+	}
+	if c.SuccessThreshold == 0 {
+		c.SuccessThreshold = 1
+	}
+	if c.FailureThreshold == 0 {
+		c.FailureThreshold = 1
 	}
 	return nil
 }
@@ -160,23 +168,28 @@ func (s *Server) createMonitor(c echo.Context) error {
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
 	monitor, err := s.dbConnection.CreateMonitor(c.Request().Context(), db.CreateMonitorInput{
-		Name:            input.Name,
-		IntervalSeconds: input.IntervalSeconds,
-		MonitorType:     input.MonitorType,
-		Config:          input.Config,
-		Description:     input.Description,
+		Name:             input.Name,
+		IntervalSeconds:  input.IntervalSeconds,
+		MonitorType:      input.MonitorType,
+		Config:           input.Config,
+		Description:      input.Description,
+		SuccessThreshold: input.SuccessThreshold,
+		FailureThreshold: input.FailureThreshold,
 	})
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
+	go performMonitoringChecks(monitor.Name, s.dbConnection, s.logger)
 	return s.returnSuccessResponse(c, http.StatusCreated, convertDBMonitorToAPIMonitor(monitor))
 }
 
 type UpdateMonitorInput struct {
-	IntervalSeconds *int                   `json:"interval_seconds"`
-	Paused          *bool                  `json:"paused"`
-	Config          map[string]interface{} `json:"config"`
-	Description     *string                `json:"description"`
+	IntervalSeconds  *int                   `json:"interval_seconds"`
+	Paused           *bool                  `json:"paused"`
+	Config           map[string]interface{} `json:"config"`
+	Description      *string                `json:"description"`
+	SuccessThreshold *int                   `json:"success_threshold"`
+	FailureThreshold *int                   `json:"failure_threshold"`
 }
 
 func (c *UpdateMonitorInput) Validate() error {
@@ -215,10 +228,12 @@ func (s *Server) updateMonitor(c echo.Context) error {
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
 	monitor, err = s.dbConnection.UpdateMonitor(c.Request().Context(), monitor.Name, db.UpdateMonitorInput{
-		IntervalSeconds: input.IntervalSeconds,
-		Config:          input.Config,
-		Paused:          input.Paused,
-		Description:     input.Description,
+		IntervalSeconds:  input.IntervalSeconds,
+		Config:           input.Config,
+		Paused:           input.Paused,
+		Description:      input.Description,
+		SuccessThreshold: input.SuccessThreshold,
+		FailureThreshold: input.FailureThreshold,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
@@ -227,4 +242,15 @@ func (s *Server) updateMonitor(c echo.Context) error {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
 	return s.returnSuccessResponse(c, http.StatusOK, convertDBMonitorToAPIMonitor(monitor))
+}
+
+func (s *Server) deleteMonitor(c echo.Context) error {
+	err := s.dbConnection.DeleteMonitor(c.Request().Context(), c.Param("id"))
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return s.returnErrorResponse(c, http.StatusNotFound, errors.New("monitor not found"))
+		}
+		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
+	}
+	return s.returnSuccessResponse(c, http.StatusNoContent, nil)
 }

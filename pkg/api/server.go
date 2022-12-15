@@ -64,6 +64,7 @@ func (s *Server) Run() {
 	e.GET("/api/v1/monitor/:id", s.getMonitor, s.userAuthRequired)
 	e.POST("/api/v1/monitor", s.createMonitor, s.userAuthRequired, s.writeRequired)
 	e.PATCH("/api/v1/monitor/:id", s.updateMonitor, s.userAuthRequired, s.writeRequired)
+	e.DELETE("/api/v1/monitor/:id", s.deleteMonitor, s.userAuthRequired, s.writeRequired)
 
 	// User API
 	e.GET("/api/v1/user/:id", s.getUser, s.userAuthRequired)

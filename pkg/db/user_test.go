@@ -43,15 +43,6 @@ func TestUserHappyPaths(t *testing.T) {
 	if u.Username != "test" {
 		t.Fatalf("Expected username to be 'test', got '%s'", u.Username)
 	}
-	// Get single user by ID
-	u, err = dbConn.GetUserByID(ctx, user.ID)
-	if err != nil {
-		t.Fatalf("Error getting user by ID: %v", err)
-		return
-	}
-	if u.Username != "test" {
-		t.Fatalf("Expected username to be 'test', got '%s'", u.Username)
-	}
 	// Update user
 	u.Locked = true
 	u.Role = "read_only"
@@ -62,7 +53,7 @@ func TestUserHappyPaths(t *testing.T) {
 		return
 	}
 	// Get updated user
-	u, err = dbConn.GetUserByID(ctx, user.ID)
+	u, err = dbConn.GetUserByUsername(ctx, user.Username)
 	if err != nil {
 		t.Fatalf("Error getting user by ID: %v", err)
 		return
@@ -80,7 +71,7 @@ func TestUserHappyPaths(t *testing.T) {
 		t.Fatalf("Expected user to be locked")
 	}
 	// Delete user
-	if err := dbConn.DeleteUser(ctx, user.ID); err != nil {
+	if err := dbConn.DeleteUser(ctx, user.Username); err != nil {
 		t.Fatalf("Error deleting user: %v", err)
 		return
 	}
