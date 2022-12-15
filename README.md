@@ -1,5 +1,5 @@
 # TinyMonitor
-A headless monitoring system
+A headless monitoring system, designed to be simple to use and easy to maintain
 
 ### Running Locally
 
@@ -35,7 +35,19 @@ TINYMONITOR_DB_LOCATION=data/
 
 #### CLI Configuration
 
-Note:  CLI can be configured via a config file (TODO)
+Note:  CLI can be configured via a config file which is automatically sourced from `$HOME/.tinymonitor/config.json`
+
+An example config file is below:
+
+```
+{
+    "server_url": "http://localhost:8080",
+    "username": "admin",
+    "api_key": "aaaabbbbcccceeeedddd"
+}
+```
+
+You can also set your CLI configuration with environment variables as well
 
 ```
 TINYMONITOR_API_KEY="aaaabbbbcccceeeedddd"
@@ -43,8 +55,10 @@ TINYMONITOR_USERNAME=admin
 TINYMONITOR_SERVER_URL=http://localhost:8080
 ```
 
+If both a config file and environment variable is present the environment variable will be selected
+
 ### Adding new models with ent
 
-Run `go run -mod=mod entgo.io/ent/cmd/ent init $MordelNameHere`
+Run `go run -mod=mod entgo.io/ent/cmd/ent init $ModelNameHere`
 
 Generate the ORM code with `go generate ./ent`
