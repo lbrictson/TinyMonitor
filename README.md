@@ -5,7 +5,7 @@ A headless monitoring system, designed to be simple to use and easy to maintain
 
 Starting the web server:
 
-`go run cmd/server/main.go`
+`TINYMONITOR_TESTING=true go run cmd/server/main.go`
 
 Running the CLI
 
