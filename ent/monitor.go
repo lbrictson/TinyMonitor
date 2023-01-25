@@ -41,6 +41,8 @@ type Monitor struct {
 	Paused bool `json:"paused,omitempty"`
 	// FailureCount holds the value of the "failure_count" field.
 	FailureCount int `json:"failure_count,omitempty"`
+	// SuccessCount holds the value of the "success_count" field.
+	SuccessCount int `json:"success_count,omitempty"`
 	// SuccessThreshold holds the value of the "success_threshold" field.
 	SuccessThreshold int `json:"success_threshold,omitempty"`
 	// FailureThreshold holds the value of the "failure_threshold" field.
@@ -56,7 +58,7 @@ func (*Monitor) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case monitor.FieldPaused:
 			values[i] = new(sql.NullBool)
-		case monitor.FieldIntervalSeconds, monitor.FieldFailureCount, monitor.FieldSuccessThreshold, monitor.FieldFailureThreshold:
+		case monitor.FieldIntervalSeconds, monitor.FieldFailureCount, monitor.FieldSuccessCount, monitor.FieldSuccessThreshold, monitor.FieldFailureThreshold:
 			values[i] = new(sql.NullInt64)
 		case monitor.FieldID, monitor.FieldDescription, monitor.FieldCurrentDownReason, monitor.FieldStatus, monitor.FieldMonitorType:
 			values[i] = new(sql.NullString)
@@ -158,6 +160,12 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				m.FailureCount = int(value.Int64)
 			}
+		case monitor.FieldSuccessCount:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field success_count", values[i])
+			} else if value.Valid {
+				m.SuccessCount = int(value.Int64)
+			}
 		case monitor.FieldSuccessThreshold:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field success_threshold", values[i])
@@ -235,6 +243,9 @@ func (m *Monitor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("failure_count=")
 	builder.WriteString(fmt.Sprintf("%v", m.FailureCount))
+	builder.WriteString(", ")
+	builder.WriteString("success_count=")
+	builder.WriteString(fmt.Sprintf("%v", m.SuccessCount))
 	builder.WriteString(", ")
 	builder.WriteString("success_threshold=")
 	builder.WriteString(fmt.Sprintf("%v", m.SuccessThreshold))

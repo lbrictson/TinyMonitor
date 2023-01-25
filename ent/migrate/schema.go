@@ -23,6 +23,7 @@ var (
 		{Name: "interval_seconds", Type: field.TypeInt, Default: 60},
 		{Name: "paused", Type: field.TypeBool, Default: false},
 		{Name: "failure_count", Type: field.TypeInt, Default: 0},
+		{Name: "success_count", Type: field.TypeInt, Default: 0},
 		{Name: "success_threshold", Type: field.TypeInt, Default: 1},
 		{Name: "failure_threshold", Type: field.TypeInt, Default: 1},
 	}

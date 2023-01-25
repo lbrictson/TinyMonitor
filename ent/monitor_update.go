@@ -178,6 +178,27 @@ func (mu *MonitorUpdate) AddFailureCount(i int) *MonitorUpdate {
 	return mu
 }
 
+// SetSuccessCount sets the "success_count" field.
+func (mu *MonitorUpdate) SetSuccessCount(i int) *MonitorUpdate {
+	mu.mutation.ResetSuccessCount()
+	mu.mutation.SetSuccessCount(i)
+	return mu
+}
+
+// SetNillableSuccessCount sets the "success_count" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableSuccessCount(i *int) *MonitorUpdate {
+	if i != nil {
+		mu.SetSuccessCount(*i)
+	}
+	return mu
+}
+
+// AddSuccessCount adds i to the "success_count" field.
+func (mu *MonitorUpdate) AddSuccessCount(i int) *MonitorUpdate {
+	mu.mutation.AddSuccessCount(i)
+	return mu
+}
+
 // SetSuccessThreshold sets the "success_threshold" field.
 func (mu *MonitorUpdate) SetSuccessThreshold(i int) *MonitorUpdate {
 	mu.mutation.ResetSuccessThreshold()
@@ -347,6 +368,12 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.AddedFailureCount(); ok {
 		_spec.AddField(monitor.FieldFailureCount, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.SuccessCount(); ok {
+		_spec.SetField(monitor.FieldSuccessCount, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.AddedSuccessCount(); ok {
+		_spec.AddField(monitor.FieldSuccessCount, field.TypeInt, value)
 	}
 	if value, ok := mu.mutation.SuccessThreshold(); ok {
 		_spec.SetField(monitor.FieldSuccessThreshold, field.TypeInt, value)
@@ -526,6 +553,27 @@ func (muo *MonitorUpdateOne) SetNillableFailureCount(i *int) *MonitorUpdateOne {
 // AddFailureCount adds i to the "failure_count" field.
 func (muo *MonitorUpdateOne) AddFailureCount(i int) *MonitorUpdateOne {
 	muo.mutation.AddFailureCount(i)
+	return muo
+}
+
+// SetSuccessCount sets the "success_count" field.
+func (muo *MonitorUpdateOne) SetSuccessCount(i int) *MonitorUpdateOne {
+	muo.mutation.ResetSuccessCount()
+	muo.mutation.SetSuccessCount(i)
+	return muo
+}
+
+// SetNillableSuccessCount sets the "success_count" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableSuccessCount(i *int) *MonitorUpdateOne {
+	if i != nil {
+		muo.SetSuccessCount(*i)
+	}
+	return muo
+}
+
+// AddSuccessCount adds i to the "success_count" field.
+func (muo *MonitorUpdateOne) AddSuccessCount(i int) *MonitorUpdateOne {
+	muo.mutation.AddSuccessCount(i)
 	return muo
 }
 
@@ -728,6 +776,12 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 	}
 	if value, ok := muo.mutation.AddedFailureCount(); ok {
 		_spec.AddField(monitor.FieldFailureCount, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.SuccessCount(); ok {
+		_spec.SetField(monitor.FieldSuccessCount, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.AddedSuccessCount(); ok {
+		_spec.AddField(monitor.FieldSuccessCount, field.TypeInt, value)
 	}
 	if value, ok := muo.mutation.SuccessThreshold(); ok {
 		_spec.SetField(monitor.FieldSuccessThreshold, field.TypeInt, value)

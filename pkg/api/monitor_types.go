@@ -5,31 +5,79 @@ import (
 	"errors"
 )
 
+type BrowserMonitorConfig struct {
+	URL                 string `json:"url"`
+	TimeoutMS           int    `json:"timeout_ms"`
+	BodyContains        string `json:"expected_body_contains"`
+	DoubleCheckFailures bool   `json:"double_check_failures"`
+	Browser             string `json:"browser"`
+	ExpectResponseCode  int    `json:"expect_response_code"`
+}
+
+func ConvertBrowserMonitorConfigToGeneric(config BrowserMonitorConfig) map[string]interface{} {
+	return map[string]interface{}{
+		"url":                    config.URL,
+		"timeout_ms":             config.TimeoutMS,
+		"expected_body_contains": config.BodyContains,
+		"double_check_failures":  config.DoubleCheckFailures,
+		"browser":                config.Browser,
+		"expect_response_code":   config.ExpectResponseCode,
+	}
+}
+
+func validateBrowserMonitorConfig(raw map[string]interface{}) error {
+	// Marshall the raw config into a BrowserMonitorConfig
+	var config BrowserMonitorConfig
+	b, err := json.Marshal(raw)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(b, &config)
+	if err != nil {
+		return err
+	}
+	// Validate the config
+	if config.URL == "" {
+		return errors.New("url is required")
+	}
+	if config.TimeoutMS == 0 {
+		return errors.New("timeout_ms is required")
+	}
+	if config.ExpectResponseCode == 0 {
+		return errors.New("expect_response_code is required")
+	}
+	validBrowsers := []string{"chrome", "firefox", "webkit"}
+	for _, browser := range validBrowsers {
+		if config.Browser == browser {
+			return nil
+		}
+	}
+	return errors.New("browser must be one of chrome, firefox, webkit")
+}
+
 type HTTPMonitorConfig struct {
-	URL                    string            `json:"url"`
-	Method                 string            `json:"method"`
-	BodyContains           string            `json:"expected_body_contains"`
-	TimeoutMS              int               `json:"timeout_ms"`
-	DoubleCheckFailures    bool              `json:"double_check_failures"`
-	InspectResponseForText string            `json:"inspect_response_for_text"`
-	ExpectResponseCode     int               `json:"expect_response_code"`
-	SkipTLSValidation      bool              `json:"skip_tls_validation"`
-	RequestBody            string            `json:"request_body"`
-	Headers                map[string]string `json:"headers"`
+	URL                 string            `json:"url"`
+	Method              string            `json:"method"`
+	BodyContains        string            `json:"expected_body_contains"`
+	TimeoutMS           int               `json:"timeout_ms"`
+	DoubleCheckFailures bool              `json:"double_check_failures"`
+	ExpectResponseCode  int               `json:"expect_response_code"`
+	SkipTLSValidation   bool              `json:"skip_tls_validation"`
+	RequestBody         string            `json:"request_body"`
+	Headers             map[string]string `json:"headers"`
 }
 
 func ConvertHTTPMonitorConfigToGeneric(config HTTPMonitorConfig) map[string]interface{} {
 	return map[string]interface{}{
-		"url":                       config.URL,
-		"method":                    config.Method,
-		"expected_body_contains":    config.BodyContains,
-		"timeout_ms":                config.TimeoutMS,
-		"double_check_failures":     config.DoubleCheckFailures,
-		"inspect_response_for_text": config.InspectResponseForText,
-		"expect_response_code":      config.ExpectResponseCode,
-		"skip_tls_validation":       config.SkipTLSValidation,
-		"request_body":              config.RequestBody,
-		"headers":                   config.Headers,
+		"url":                    config.URL,
+		"method":                 config.Method,
+		"expected_body_contains": config.BodyContains,
+		"timeout_ms":             config.TimeoutMS,
+		"double_check_failures":  config.DoubleCheckFailures,
+		"expect_response_code":   config.ExpectResponseCode,
+		"skip_tls_validation":    config.SkipTLSValidation,
+		"request_body":           config.RequestBody,
+		"headers":                config.Headers,
 	}
 }
 

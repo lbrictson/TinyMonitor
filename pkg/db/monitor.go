@@ -23,6 +23,7 @@ type BaseMonitor struct {
 	Config              map[string]interface{} `json:"config"`
 	Paused              bool                   `json:"paused"`
 	FailureCount        int                    `json:"failure_count"`
+	SuccessCount        int                    `json:"success_count"`
 	SuccessThreshold    int                    `json:"success_threshold"`
 	FailureThreshold    int                    `json:"failure_threshold"`
 }
@@ -45,6 +46,7 @@ func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
 		Config:              entMonitor.Config,
 		Paused:              entMonitor.Paused,
 		FailureCount:        entMonitor.FailureCount,
+		SuccessCount:        entMonitor.SuccessCount,
 		SuccessThreshold:    entMonitor.SuccessThreshold,
 		FailureThreshold:    entMonitor.FailureThreshold,
 	}
@@ -151,6 +153,7 @@ type UpdateMonitorInput struct {
 	Paused              *bool                  `json:"paused"`
 	Description         *string                `json:"description"`
 	FailureCount        *int                   `json:"failure_count"`
+	SuccessCount        *int                   `json:"success_count"`
 	SuccessThreshold    *int                   `json:"success_threshold"`
 	FailureThreshold    *int                   `json:"failure_threshold"`
 	CurrentOutageReason *string                `json:"current_outage_reason"`
@@ -181,6 +184,9 @@ func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, name string, in
 	}
 	if input.FailureCount != nil {
 		update = update.SetFailureCount(*input.FailureCount)
+	}
+	if input.SuccessCount != nil {
+		update = update.SetSuccessCount(*input.SuccessCount)
 	}
 	if input.SuccessThreshold != nil {
 		update = update.SetSuccessThreshold(*input.SuccessThreshold)

@@ -164,6 +164,20 @@ func (mc *MonitorCreate) SetNillableFailureCount(i *int) *MonitorCreate {
 	return mc
 }
 
+// SetSuccessCount sets the "success_count" field.
+func (mc *MonitorCreate) SetSuccessCount(i int) *MonitorCreate {
+	mc.mutation.SetSuccessCount(i)
+	return mc
+}
+
+// SetNillableSuccessCount sets the "success_count" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableSuccessCount(i *int) *MonitorCreate {
+	if i != nil {
+		mc.SetSuccessCount(*i)
+	}
+	return mc
+}
+
 // SetSuccessThreshold sets the "success_threshold" field.
 func (mc *MonitorCreate) SetSuccessThreshold(i int) *MonitorCreate {
 	mc.mutation.SetSuccessThreshold(i)
@@ -307,6 +321,10 @@ func (mc *MonitorCreate) defaults() {
 		v := monitor.DefaultFailureCount
 		mc.mutation.SetFailureCount(v)
 	}
+	if _, ok := mc.mutation.SuccessCount(); !ok {
+		v := monitor.DefaultSuccessCount
+		mc.mutation.SetSuccessCount(v)
+	}
 	if _, ok := mc.mutation.SuccessThreshold(); !ok {
 		v := monitor.DefaultSuccessThreshold
 		mc.mutation.SetSuccessThreshold(v)
@@ -351,6 +369,9 @@ func (mc *MonitorCreate) check() error {
 	}
 	if _, ok := mc.mutation.FailureCount(); !ok {
 		return &ValidationError{Name: "failure_count", err: errors.New(`ent: missing required field "Monitor.failure_count"`)}
+	}
+	if _, ok := mc.mutation.SuccessCount(); !ok {
+		return &ValidationError{Name: "success_count", err: errors.New(`ent: missing required field "Monitor.success_count"`)}
 	}
 	if _, ok := mc.mutation.SuccessThreshold(); !ok {
 		return &ValidationError{Name: "success_threshold", err: errors.New(`ent: missing required field "Monitor.success_threshold"`)}
@@ -446,6 +467,10 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.FailureCount(); ok {
 		_spec.SetField(monitor.FieldFailureCount, field.TypeInt, value)
 		_node.FailureCount = value
+	}
+	if value, ok := mc.mutation.SuccessCount(); ok {
+		_spec.SetField(monitor.FieldSuccessCount, field.TypeInt, value)
+		_node.SuccessCount = value
 	}
 	if value, ok := mc.mutation.SuccessThreshold(); ok {
 		_spec.SetField(monitor.FieldSuccessThreshold, field.TypeInt, value)

@@ -157,6 +157,13 @@ func FailureCount(v int) predicate.Monitor {
 	})
 }
 
+// SuccessCount applies equality check predicate on the "success_count" field. It's identical to SuccessCountEQ.
+func SuccessCount(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSuccessCount), v))
+	})
+}
+
 // SuccessThreshold applies equality check predicate on the "success_threshold" field. It's identical to SuccessThresholdEQ.
 func SuccessThreshold(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
@@ -976,6 +983,70 @@ func FailureCountLT(v int) predicate.Monitor {
 func FailureCountLTE(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldFailureCount), v))
+	})
+}
+
+// SuccessCountEQ applies the EQ predicate on the "success_count" field.
+func SuccessCountEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSuccessCount), v))
+	})
+}
+
+// SuccessCountNEQ applies the NEQ predicate on the "success_count" field.
+func SuccessCountNEQ(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldSuccessCount), v))
+	})
+}
+
+// SuccessCountIn applies the In predicate on the "success_count" field.
+func SuccessCountIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.In(s.C(FieldSuccessCount), v...))
+	})
+}
+
+// SuccessCountNotIn applies the NotIn predicate on the "success_count" field.
+func SuccessCountNotIn(vs ...int) predicate.Monitor {
+	v := make([]any, len(vs))
+	for i := range v {
+		v[i] = vs[i]
+	}
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NotIn(s.C(FieldSuccessCount), v...))
+	})
+}
+
+// SuccessCountGT applies the GT predicate on the "success_count" field.
+func SuccessCountGT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GT(s.C(FieldSuccessCount), v))
+	})
+}
+
+// SuccessCountGTE applies the GTE predicate on the "success_count" field.
+func SuccessCountGTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.GTE(s.C(FieldSuccessCount), v))
+	})
+}
+
+// SuccessCountLT applies the LT predicate on the "success_count" field.
+func SuccessCountLT(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LT(s.C(FieldSuccessCount), v))
+	})
+}
+
+// SuccessCountLTE applies the LTE predicate on the "success_count" field.
+func SuccessCountLTE(v int) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.LTE(s.C(FieldSuccessCount), v))
 	})
 }
 

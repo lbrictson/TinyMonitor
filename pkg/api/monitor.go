@@ -27,6 +27,7 @@ type MonitorModel struct {
 	Config                    map[string]interface{} `json:"config"`
 	Paused                    bool                   `json:"paused"`
 	FailureCount              int                    `json:"failure_count"`
+	SuccessCount              int                    `json:"success_count"`
 	SuccessThreshold          int                    `json:"success_threshold"`
 	FailureThreshold          int                    `json:"failure_threshold"`
 }
@@ -164,6 +165,12 @@ func (s *Server) createMonitor(c echo.Context) error {
 		if err != nil {
 			return s.returnErrorResponse(c, http.StatusBadRequest, err)
 		}
+	case "browser":
+		// Validate config
+		err = validateBrowserMonitorConfig(input.Config)
+		if err != nil {
+			return s.returnErrorResponse(c, http.StatusBadRequest, err)
+		}
 	default:
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
@@ -221,6 +228,12 @@ func (s *Server) updateMonitor(c echo.Context) error {
 	case "http":
 		// Validate config
 		err = validateHTTPMonitorConfig(input.Config)
+		if err != nil {
+			return s.returnErrorResponse(c, http.StatusBadRequest, err)
+		}
+	case "browser":
+		// Validate config
+		err = validateBrowserMonitorConfig(input.Config)
 		if err != nil {
 			return s.returnErrorResponse(c, http.StatusBadRequest, err)
 		}

@@ -1,9 +1,6 @@
 package client
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"github.com/gosuri/uitable"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
@@ -134,71 +131,40 @@ func printTextUserData(data []api.UserModel) {
 }
 
 func (c *APIClient) ListUsers(outputFormat string) error {
-	data, err := c.do("/api/v1/user", "GET", nil)
-	if err != nil {
-		return err
-	}
-	user := []api.UserModel{}
-	err = json.Unmarshal(data, &user)
+	users, err := c.sdk.ListUsers()
 	if err != nil {
 		return err
 	}
 	if outputFormat == "json" {
-		return emitJSON(user)
+		return emitJSON(users)
 	}
-	printTextUserData(user)
+	printTextUserData(users)
 	return nil
 }
 
 func (c *APIClient) GetUser(username string, outputformat string) error {
-	usersAPIData, err := c.do("/api/v1/user", "GET", nil)
-	if err != nil {
-		return err
-	}
-	users := []api.UserModel{}
-	err = json.Unmarshal(usersAPIData, &users)
-	if err != nil {
-		return err
-	}
-	for _, x := range users {
-		if x.Username == username {
-			if outputformat == "json" {
-				return emitJSON(x)
-			}
-			printTextUserData([]api.UserModel{x})
-			return nil
-		}
-	}
-	return errors.New("user not found")
-}
-
-func (c *APIClient) CreateUser(username string, role string, outputformat string) error {
-	apiInput := api.CreateUserRequest{
-		Username: username,
-		Role:     role,
-	}
-	b, err := json.Marshal(&apiInput)
-	if err != nil {
-		return err
-	}
-	resp, err := c.do("/api/v1/user", "POST", bytes.NewBuffer(b))
-	if err != nil {
-		return err
-	}
-	data := api.CreateUserResponse{}
-	err = json.Unmarshal(resp, &data)
+	user, err := c.sdk.GetUser(username)
 	if err != nil {
 		return err
 	}
 	if outputformat == "json" {
-		return emitJSON(data)
+		return emitJSON(user)
 	}
-	fmt.Printf("User %v created successfully, API key is: %v\n", username, data.APIKey)
+	printTextUserData([]api.UserModel{*user})
+	return nil
+}
+
+func (c *APIClient) CreateUser(username string, role string, outputformat string) error {
+	user, err := c.sdk.CreateUser(username, role)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("User %v created successfully, API key is: %v\n", username, *user)
 	return nil
 }
 
 func (c *APIClient) DeleteUser(username string, outputformat string) error {
-	_, err := c.do(fmt.Sprintf("/api/v1/user/%v", username), "DELETE", nil)
+	err := c.sdk.DeleteUser(username)
 	if err != nil {
 		return err
 	}
@@ -207,15 +173,7 @@ func (c *APIClient) DeleteUser(username string, outputformat string) error {
 }
 
 func (c *APIClient) ChangeUserRole(username string, newRole string, outputformat string) error {
-	apiInput := api.UpdateUserRequest{
-		Role:      &newRole,
-		LockedOut: nil,
-	}
-	b, err := json.Marshal(&apiInput)
-	if err != nil {
-		return err
-	}
-	_, err = c.do(fmt.Sprintf("/api/v1/user/%v", username), "PATCH", bytes.NewBuffer(b))
+	_, err := c.sdk.UpdateUser(username, newRole)
 	if err != nil {
 		return err
 	}

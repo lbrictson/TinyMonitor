@@ -35,6 +35,8 @@ const (
 	FieldPaused = "paused"
 	// FieldFailureCount holds the string denoting the failure_count field in the database.
 	FieldFailureCount = "failure_count"
+	// FieldSuccessCount holds the string denoting the success_count field in the database.
+	FieldSuccessCount = "success_count"
 	// FieldSuccessThreshold holds the string denoting the success_threshold field in the database.
 	FieldSuccessThreshold = "success_threshold"
 	// FieldFailureThreshold holds the string denoting the failure_threshold field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldIntervalSeconds,
 	FieldPaused,
 	FieldFailureCount,
+	FieldSuccessCount,
 	FieldSuccessThreshold,
 	FieldFailureThreshold,
 }
@@ -91,6 +94,8 @@ var (
 	DefaultPaused bool
 	// DefaultFailureCount holds the default value on creation for the "failure_count" field.
 	DefaultFailureCount int
+	// DefaultSuccessCount holds the default value on creation for the "success_count" field.
+	DefaultSuccessCount int
 	// DefaultSuccessThreshold holds the default value on creation for the "success_threshold" field.
 	DefaultSuccessThreshold int
 	// DefaultFailureThreshold holds the default value on creation for the "failure_threshold" field.

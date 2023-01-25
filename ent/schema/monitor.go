@@ -27,6 +27,7 @@ func (Monitor) Fields() []ent.Field {
 		field.Int("interval_seconds").Default(60),
 		field.Bool("paused").Default(false),
 		field.Int("failure_count").Default(0),
+		field.Int("success_count").Default(0),
 		field.Int("success_threshold").Default(1),
 		field.Int("failure_threshold").Default(1),
 	}

@@ -6,10 +6,16 @@ import (
 	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/lbrictson/TinyMonitor/pkg/seeder"
 	_ "github.com/lib/pq"
+	"github.com/playwright-community/playwright-go"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
+	// Setup browser automation testing
+	err := playwright.Install()
+	if err != nil {
+		panic(err)
+	}
 	conf, err := config.ReadServerConfig()
 	if err != nil {
 		panic(err)

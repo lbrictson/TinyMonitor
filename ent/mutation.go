@@ -49,6 +49,8 @@ type MonitorMutation struct {
 	paused                 *bool
 	failure_count          *int
 	addfailure_count       *int
+	success_count          *int
+	addsuccess_count       *int
 	success_threshold      *int
 	addsuccess_threshold   *int
 	failure_threshold      *int
@@ -648,6 +650,62 @@ func (m *MonitorMutation) ResetFailureCount() {
 	m.addfailure_count = nil
 }
 
+// SetSuccessCount sets the "success_count" field.
+func (m *MonitorMutation) SetSuccessCount(i int) {
+	m.success_count = &i
+	m.addsuccess_count = nil
+}
+
+// SuccessCount returns the value of the "success_count" field in the mutation.
+func (m *MonitorMutation) SuccessCount() (r int, exists bool) {
+	v := m.success_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuccessCount returns the old "success_count" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldSuccessCount(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuccessCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuccessCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuccessCount: %w", err)
+	}
+	return oldValue.SuccessCount, nil
+}
+
+// AddSuccessCount adds i to the "success_count" field.
+func (m *MonitorMutation) AddSuccessCount(i int) {
+	if m.addsuccess_count != nil {
+		*m.addsuccess_count += i
+	} else {
+		m.addsuccess_count = &i
+	}
+}
+
+// AddedSuccessCount returns the value that was added to the "success_count" field in this mutation.
+func (m *MonitorMutation) AddedSuccessCount() (r int, exists bool) {
+	v := m.addsuccess_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSuccessCount resets all changes to the "success_count" field.
+func (m *MonitorMutation) ResetSuccessCount() {
+	m.success_count = nil
+	m.addsuccess_count = nil
+}
+
 // SetSuccessThreshold sets the "success_threshold" field.
 func (m *MonitorMutation) SetSuccessThreshold(i int) {
 	m.success_threshold = &i
@@ -779,7 +837,7 @@ func (m *MonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MonitorMutation) Fields() []string {
-	fields := make([]string, 0, 14)
+	fields := make([]string, 0, 15)
 	if m.description != nil {
 		fields = append(fields, monitor.FieldDescription)
 	}
@@ -815,6 +873,9 @@ func (m *MonitorMutation) Fields() []string {
 	}
 	if m.failure_count != nil {
 		fields = append(fields, monitor.FieldFailureCount)
+	}
+	if m.success_count != nil {
+		fields = append(fields, monitor.FieldSuccessCount)
 	}
 	if m.success_threshold != nil {
 		fields = append(fields, monitor.FieldSuccessThreshold)
@@ -854,6 +915,8 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.Paused()
 	case monitor.FieldFailureCount:
 		return m.FailureCount()
+	case monitor.FieldSuccessCount:
+		return m.SuccessCount()
 	case monitor.FieldSuccessThreshold:
 		return m.SuccessThreshold()
 	case monitor.FieldFailureThreshold:
@@ -891,6 +954,8 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldPaused(ctx)
 	case monitor.FieldFailureCount:
 		return m.OldFailureCount(ctx)
+	case monitor.FieldSuccessCount:
+		return m.OldSuccessCount(ctx)
 	case monitor.FieldSuccessThreshold:
 		return m.OldSuccessThreshold(ctx)
 	case monitor.FieldFailureThreshold:
@@ -988,6 +1053,13 @@ func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFailureCount(v)
 		return nil
+	case monitor.FieldSuccessCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuccessCount(v)
+		return nil
 	case monitor.FieldSuccessThreshold:
 		v, ok := value.(int)
 		if !ok {
@@ -1016,6 +1088,9 @@ func (m *MonitorMutation) AddedFields() []string {
 	if m.addfailure_count != nil {
 		fields = append(fields, monitor.FieldFailureCount)
 	}
+	if m.addsuccess_count != nil {
+		fields = append(fields, monitor.FieldSuccessCount)
+	}
 	if m.addsuccess_threshold != nil {
 		fields = append(fields, monitor.FieldSuccessThreshold)
 	}
@@ -1034,6 +1109,8 @@ func (m *MonitorMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedIntervalSeconds()
 	case monitor.FieldFailureCount:
 		return m.AddedFailureCount()
+	case monitor.FieldSuccessCount:
+		return m.AddedSuccessCount()
 	case monitor.FieldSuccessThreshold:
 		return m.AddedSuccessThreshold()
 	case monitor.FieldFailureThreshold:
@@ -1060,6 +1137,13 @@ func (m *MonitorMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddFailureCount(v)
+		return nil
+	case monitor.FieldSuccessCount:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSuccessCount(v)
 		return nil
 	case monitor.FieldSuccessThreshold:
 		v, ok := value.(int)
@@ -1146,6 +1230,9 @@ func (m *MonitorMutation) ResetField(name string) error {
 		return nil
 	case monitor.FieldFailureCount:
 		m.ResetFailureCount()
+		return nil
+	case monitor.FieldSuccessCount:
+		m.ResetSuccessCount()
 		return nil
 	case monitor.FieldSuccessThreshold:
 		m.ResetSuccessThreshold()

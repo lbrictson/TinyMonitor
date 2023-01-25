@@ -47,14 +47,13 @@ func Run(dbConnection *db.DatabaseConnection) error {
 			FailureThreshold: 1,
 			SuccessThreshold: 1,
 			Config: api.ConvertHTTPMonitorConfigToGeneric(api.HTTPMonitorConfig{
-				URL:                    "127.0.0.1",
-				Method:                 "GET",
-				BodyContains:           "",
-				TimeoutMS:              200,
-				DoubleCheckFailures:    false,
-				InspectResponseForText: "",
-				ExpectResponseCode:     200,
-				SkipTLSValidation:      true,
+				URL:                 "127.0.0.1",
+				Method:              "GET",
+				BodyContains:        "",
+				TimeoutMS:           200,
+				DoubleCheckFailures: false,
+				ExpectResponseCode:  200,
+				SkipTLSValidation:   true,
 			}),
 		})
 		if err != nil {

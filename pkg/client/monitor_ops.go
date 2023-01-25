@@ -1,12 +1,12 @@
 package client
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/fatih/color"
 	"github.com/gosuri/uitable"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
+	"github.com/lbrictson/TinyMonitor/pkg/sdk"
 	"github.com/urfave/cli/v2"
 	"os"
 )
@@ -66,6 +66,22 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 						ops.Status = &s
 					}
 					return c.ListMonitors(ops, context.String("output"))
+				},
+			},
+			{
+				Name:        "get",
+				Description: "get monitor",
+				Usage:       "monitor get $name",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.GetMonitor(context.Args().First(), context.String("output"))
 				},
 			},
 			{
@@ -146,79 +162,63 @@ type ListMonitorOptions struct {
 }
 
 func (c *APIClient) ListMonitors(options ListMonitorOptions, outputFormat string) error {
-	path := "/api/v1/monitor"
-	if options.Limit != nil {
-		path += fmt.Sprintf("?limit=%v", *options.Limit)
-	} else {
-		path += "?limit=1000"
-	}
-	if options.Offset != nil {
-		path += fmt.Sprintf("&offset=%v", *options.Offset)
-	}
-	if options.Type != nil {
-		path += fmt.Sprintf("&type=%v", *options.Type)
-	}
-	if options.Status != nil {
-		path += fmt.Sprintf("&status=%v", *options.Status)
-	}
-	data, err := c.do(path, "GET", nil)
-	if err != nil {
-		return err
-	}
-	monitors := []api.MonitorModel{}
-	err = json.Unmarshal(data, &monitors)
+	data, err := c.sdk.ListMonitors(sdk.ListMonitorOptions{
+		Limit:  options.Limit,
+		Offset: options.Offset,
+		Type:   options.Type,
+		Status: options.Status,
+	})
 	if err != nil {
 		return err
 	}
 	if outputFormat == "json" {
-		return emitJSON(monitors)
+		return emitJSON(data)
 	}
-	printTextMonitorData(monitors)
+	printTextMonitorData(data)
 	return nil
 }
 
 func (c *APIClient) GetMonitor(name string, outputformat string) error {
-	data, err := c.do(fmt.Sprintf("/api/v1/monitor/%v", name), "GET", nil)
+	monitor, err := c.sdk.GetMonitor(name)
 	if err != nil {
 		return err
 	}
 	if outputformat == "json" {
-		return emitJSON(data)
+		return emitJSON(monitor)
 	}
-	fmt.Println(data)
+	printTextMonitorData([]api.MonitorModel{*monitor})
 	return nil
 }
 
 func (c *APIClient) EditMonitor(name string) error {
-	data, err := c.do(fmt.Sprintf("/api/v1/monitor/%v", name), "GET", nil)
+	data, err := c.sdk.GetMonitor(name)
 	if err != nil {
 		return err
 	}
-	monitor := api.MonitorModel{}
-	err = json.Unmarshal(data, &monitor)
-	if err != nil {
-		return err
+	monitor := api.UpdateMonitorInput{
+		IntervalSeconds:  &data.IntervalSeconds,
+		Paused:           &data.Paused,
+		Config:           data.Config,
+		Description:      &data.Description,
+		SuccessThreshold: &data.SuccessThreshold,
+		FailureThreshold: &data.FailureThreshold,
 	}
 	editedData, err := editStructInEditor(monitor)
 	if err != nil {
 		return err
 	}
-	editedMonitor := api.MonitorModel{}
+	editedMonitor := api.UpdateMonitorInput{}
 	err = json.Unmarshal(editedData, &editedMonitor)
 	if err != nil {
 		return err
 	}
 	Updates := api.UpdateMonitorInput{
-		IntervalSeconds: &editedMonitor.IntervalSeconds,
-		Paused:          &editedMonitor.Paused,
+		IntervalSeconds: editedMonitor.IntervalSeconds,
+		Paused:          editedMonitor.Paused,
 		Config:          editedMonitor.Config,
-		Description:     &editedMonitor.Description,
+		Description:     editedMonitor.Description,
 	}
-	b, err := json.Marshal(Updates)
-	if err != nil {
-		return err
-	}
-	_, err = c.do(fmt.Sprintf("/api/v1/monitor/%v", name), "PATCH", bytes.NewBuffer(b))
+	_, err = c.sdk.UpdateMonitor(name, Updates)
 	if err != nil {
 		return err
 	}
@@ -238,16 +238,19 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 	if err != nil {
 		return err
 	}
-	// Marshal the monitor model into a byte array
-	b, err := json.Marshal(monitor)
-	if err != nil {
-		return err
-	}
 	// See if the monitor already exists
-	_, err = c.do(fmt.Sprintf("/api/v1/monitor/%v", monitor.Name), "GET", nil)
+	_, err = c.sdk.GetMonitor(monitor.Name)
 	if err != nil {
 		// If it doesn't exist, create it
-		_, err = c.do("/api/v1/monitor", "POST", bytes.NewBuffer(b))
+		_, err = c.sdk.CreateMonitor(api.CreateMonitorInput{
+			Name:             monitor.Name,
+			Description:      monitor.Description,
+			IntervalSeconds:  monitor.IntervalSeconds,
+			MonitorType:      monitor.MonitorType,
+			Config:           monitor.Config,
+			SuccessThreshold: monitor.SuccessThreshold,
+			FailureThreshold: monitor.FailureThreshold,
+		})
 		if err != nil {
 			return err
 		}
@@ -255,7 +258,14 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 		return nil
 	}
 	// Send the request to the API
-	_, err = c.do(fmt.Sprintf("/api/v1/monitor/%v", monitor.Name), "PATCH", bytes.NewBuffer(b))
+	_, err = c.sdk.UpdateMonitor(monitor.Name, api.UpdateMonitorInput{
+		IntervalSeconds:  &monitor.IntervalSeconds,
+		Paused:           &monitor.Paused,
+		Config:           monitor.Config,
+		Description:      &monitor.Description,
+		SuccessThreshold: &monitor.SuccessThreshold,
+		FailureThreshold: &monitor.FailureThreshold,
+	})
 	if err != nil {
 		return err
 	}
@@ -264,7 +274,7 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 }
 
 func (c *APIClient) DeleteMonitor(name string, outputformat string) error {
-	_, err := c.do(fmt.Sprintf("/api/v1/monitor/%v", name), "DELETE", nil)
+	err := c.sdk.DeleteMonitor(name)
 	if err != nil {
 		return err
 	}

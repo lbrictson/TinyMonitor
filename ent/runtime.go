@@ -50,12 +50,16 @@ func init() {
 	monitorDescFailureCount := monitorFields[12].Descriptor()
 	// monitor.DefaultFailureCount holds the default value on creation for the failure_count field.
 	monitor.DefaultFailureCount = monitorDescFailureCount.Default.(int)
+	// monitorDescSuccessCount is the schema descriptor for success_count field.
+	monitorDescSuccessCount := monitorFields[13].Descriptor()
+	// monitor.DefaultSuccessCount holds the default value on creation for the success_count field.
+	monitor.DefaultSuccessCount = monitorDescSuccessCount.Default.(int)
 	// monitorDescSuccessThreshold is the schema descriptor for success_threshold field.
-	monitorDescSuccessThreshold := monitorFields[13].Descriptor()
+	monitorDescSuccessThreshold := monitorFields[14].Descriptor()
 	// monitor.DefaultSuccessThreshold holds the default value on creation for the success_threshold field.
 	monitor.DefaultSuccessThreshold = monitorDescSuccessThreshold.Default.(int)
 	// monitorDescFailureThreshold is the schema descriptor for failure_threshold field.
-	monitorDescFailureThreshold := monitorFields[14].Descriptor()
+	monitorDescFailureThreshold := monitorFields[15].Descriptor()
 	// monitor.DefaultFailureThreshold holds the default value on creation for the failure_threshold field.
 	monitor.DefaultFailureThreshold = monitorDescFailureThreshold.Default.(int)
 	// monitorDescID is the schema descriptor for id field.
