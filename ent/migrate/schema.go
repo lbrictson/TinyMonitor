@@ -33,6 +33,20 @@ var (
 		Columns:    MonitorsColumns,
 		PrimaryKey: []*schema.Column{MonitorsColumns[0]},
 	}
+	// SecretsColumns holds the columns for the "secrets" table.
+	SecretsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Size: 50},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "created_by", Type: field.TypeString, Default: ""},
+		{Name: "value", Type: field.TypeString, Size: 3000},
+	}
+	// SecretsTable holds the schema information for the "secrets" table.
+	SecretsTable = &schema.Table{
+		Name:       "secrets",
+		Columns:    SecretsColumns,
+		PrimaryKey: []*schema.Column{SecretsColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 50},
@@ -52,6 +66,7 @@ var (
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		MonitorsTable,
+		SecretsTable,
 		UsersTable,
 	}
 )

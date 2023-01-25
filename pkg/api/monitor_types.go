@@ -6,12 +6,11 @@ import (
 )
 
 type BrowserMonitorConfig struct {
-	URL                 string `json:"url"`
-	TimeoutMS           int    `json:"timeout_ms"`
-	BodyContains        string `json:"expected_body_contains"`
-	DoubleCheckFailures bool   `json:"double_check_failures"`
-	Browser             string `json:"browser"`
-	ExpectResponseCode  int    `json:"expect_response_code"`
+	URL                string `json:"url"`
+	TimeoutMS          int    `json:"timeout_ms"`
+	BodyContains       string `json:"expected_body_contains"`
+	Browser            string `json:"browser"`
+	ExpectResponseCode int    `json:"expect_response_code"`
 }
 
 func ConvertBrowserMonitorConfigToGeneric(config BrowserMonitorConfig) map[string]interface{} {
@@ -19,7 +18,6 @@ func ConvertBrowserMonitorConfigToGeneric(config BrowserMonitorConfig) map[strin
 		"url":                    config.URL,
 		"timeout_ms":             config.TimeoutMS,
 		"expected_body_contains": config.BodyContains,
-		"double_check_failures":  config.DoubleCheckFailures,
 		"browser":                config.Browser,
 		"expect_response_code":   config.ExpectResponseCode,
 	}
@@ -56,15 +54,14 @@ func validateBrowserMonitorConfig(raw map[string]interface{}) error {
 }
 
 type HTTPMonitorConfig struct {
-	URL                 string            `json:"url"`
-	Method              string            `json:"method"`
-	BodyContains        string            `json:"expected_body_contains"`
-	TimeoutMS           int               `json:"timeout_ms"`
-	DoubleCheckFailures bool              `json:"double_check_failures"`
-	ExpectResponseCode  int               `json:"expect_response_code"`
-	SkipTLSValidation   bool              `json:"skip_tls_validation"`
-	RequestBody         string            `json:"request_body"`
-	Headers             map[string]string `json:"headers"`
+	URL                string            `json:"url"`
+	Method             string            `json:"method"`
+	BodyContains       string            `json:"expected_body_contains"`
+	TimeoutMS          int               `json:"timeout_ms"`
+	ExpectResponseCode int               `json:"expect_response_code"`
+	SkipTLSValidation  bool              `json:"skip_tls_validation"`
+	RequestBody        string            `json:"request_body"`
+	Headers            map[string]string `json:"headers"`
 }
 
 func ConvertHTTPMonitorConfigToGeneric(config HTTPMonitorConfig) map[string]interface{} {
@@ -73,7 +70,6 @@ func ConvertHTTPMonitorConfigToGeneric(config HTTPMonitorConfig) map[string]inte
 		"method":                 config.Method,
 		"expected_body_contains": config.BodyContains,
 		"timeout_ms":             config.TimeoutMS,
-		"double_check_failures":  config.DoubleCheckFailures,
 		"expect_response_code":   config.ExpectResponseCode,
 		"skip_tls_validation":    config.SkipTLSValidation,
 		"request_body":           config.RequestBody,

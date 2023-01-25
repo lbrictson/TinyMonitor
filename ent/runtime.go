@@ -7,6 +7,7 @@ import (
 
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/schema"
+	"github.com/lbrictson/TinyMonitor/ent/secret"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 )
 
@@ -67,6 +68,58 @@ func init() {
 	// monitor.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	monitor.IDValidator = func() func(string) error {
 		validators := monitorDescID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(id string) error {
+			for _, fn := range fns {
+				if err := fn(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	secretFields := schema.Secret{}.Fields()
+	_ = secretFields
+	// secretDescCreatedAt is the schema descriptor for created_at field.
+	secretDescCreatedAt := secretFields[1].Descriptor()
+	// secret.DefaultCreatedAt holds the default value on creation for the created_at field.
+	secret.DefaultCreatedAt = secretDescCreatedAt.Default.(func() time.Time)
+	// secretDescUpdatedAt is the schema descriptor for updated_at field.
+	secretDescUpdatedAt := secretFields[2].Descriptor()
+	// secret.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	secret.DefaultUpdatedAt = secretDescUpdatedAt.Default.(func() time.Time)
+	// secret.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	secret.UpdateDefaultUpdatedAt = secretDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// secretDescCreatedBy is the schema descriptor for created_by field.
+	secretDescCreatedBy := secretFields[3].Descriptor()
+	// secret.DefaultCreatedBy holds the default value on creation for the created_by field.
+	secret.DefaultCreatedBy = secretDescCreatedBy.Default.(string)
+	// secretDescValue is the schema descriptor for value field.
+	secretDescValue := secretFields[4].Descriptor()
+	// secret.ValueValidator is a validator for the "value" field. It is called by the builders before save.
+	secret.ValueValidator = func() func(string) error {
+		validators := secretDescValue.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(value string) error {
+			for _, fn := range fns {
+				if err := fn(value); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// secretDescID is the schema descriptor for id field.
+	secretDescID := secretFields[0].Descriptor()
+	// secret.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	secret.IDValidator = func() func(string) error {
+		validators := secretDescID.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),

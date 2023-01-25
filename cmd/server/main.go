@@ -8,9 +8,14 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/playwright-community/playwright-go"
 	"github.com/sirupsen/logrus"
+	"os"
 )
 
 func main() {
+	if os.Getenv("SETUP_PLAYWRIGHT") == "true" {
+		playwright.Install()
+		return
+	}
 	// Setup browser automation testing
 	err := playwright.Install()
 	if err != nil {

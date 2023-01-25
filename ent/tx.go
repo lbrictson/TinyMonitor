@@ -14,6 +14,8 @@ type Tx struct {
 	config
 	// Monitor is the client for interacting with the Monitor builders.
 	Monitor *MonitorClient
+	// Secret is the client for interacting with the Secret builders.
+	Secret *SecretClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -148,6 +150,7 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Monitor = NewMonitorClient(tx.config)
+	tx.Secret = NewSecretClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

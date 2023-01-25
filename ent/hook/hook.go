@@ -22,6 +22,19 @@ func (f MonitorFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
+// The SecretFunc type is an adapter to allow the use of ordinary
+// function as Secret mutator.
+type SecretFunc func(context.Context, *ent.SecretMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SecretFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.SecretMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SecretMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)

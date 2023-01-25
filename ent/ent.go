@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
+	"github.com/lbrictson/TinyMonitor/ent/secret"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 )
 
@@ -33,6 +34,7 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		monitor.Table: monitor.ValidColumn,
+		secret.Table:  secret.ValidColumn,
 		user.Table:    user.ValidColumn,
 	}
 	check, ok := checks[table]
