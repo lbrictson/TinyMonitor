@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/lbrictson/TinyMonitor/pkg/db"
+	"github.com/lbrictson/TinyMonitor/pkg/sink"
 	"github.com/playwright-community/playwright-go"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
@@ -52,6 +53,10 @@ func performMonitoringChecks(name string, database *db.DatabaseConnection, logge
 				// Perform an HTTP check
 				doHTTPCheck(m, database, logger)
 			case "browser":
+				if !allowBrowserMonitors {
+					logger.Warnf("Browser monitoring is currently disabled, skipping check on monitor %s", name)
+					continue
+				}
 				// Perform a browser check
 				doBrowserCheck(m, database, logger)
 			}
@@ -59,7 +64,7 @@ func performMonitoringChecks(name string, database *db.DatabaseConnection, logge
 	}
 }
 
-func processMonitorCheckDownResult(failureExplanation string, monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
+func processMonitorCheckDownResult(failureExplanation string, monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger, latencyMS float64) {
 	// Increment the failure count
 	now := time.Now()
 	fCount := monitor.FailureCount + 1
@@ -75,6 +80,29 @@ func processMonitorCheckDownResult(failureExplanation string, monitor *db.BaseMo
 		})
 		if err != nil {
 			logger.Warnf("Failed to update monitor %s: %v", monitor.Name, err)
+		}
+		for k, v := range metrics {
+			senderErr := v.SendMetric([]sink.SendMetricInput{
+				{
+					Tags:        map[string]string{"monitor": monitor.Name, "monitor-type": monitor.MonitorType},
+					MetricName:  "status",
+					MetricValue: 0,
+					MetricUnit:  "None",
+					MetricTime:  time.Now(),
+					MonitorName: monitor.Name,
+				},
+				{
+					Tags:        map[string]string{"monitor": monitor.Name, "monitor-type": monitor.MonitorType},
+					MetricName:  "latency-ms",
+					MetricValue: latencyMS,
+					MetricUnit:  "None",
+					MetricTime:  time.Now(),
+					MonitorName: monitor.Name,
+				},
+			})
+			if senderErr != nil {
+				logger.Warnf("Failed to send metric to %v: %v", k, senderErr)
+			}
 		}
 		return
 	} else {
@@ -99,9 +127,32 @@ func processMonitorCheckDownResult(failureExplanation string, monitor *db.BaseMo
 			logger.Warnf("Failed to update monitor %s: %v", monitor.Name, err)
 		}
 	}
+	for k, v := range metrics {
+		senderErr := v.SendMetric([]sink.SendMetricInput{
+			{
+				Tags:        map[string]string{"monitor": monitor.Name, "monitor-type": monitor.MonitorType},
+				MetricName:  "status",
+				MetricValue: 0,
+				MetricUnit:  "None",
+				MetricTime:  time.Now(),
+				MonitorName: monitor.Name,
+			},
+			{
+				Tags:        map[string]string{"monitor": monitor.Name, "monitor-type": monitor.MonitorType},
+				MetricName:  "latency-ms",
+				MetricValue: latencyMS,
+				MetricUnit:  "None",
+				MetricTime:  time.Now(),
+				MonitorName: monitor.Name,
+			},
+		})
+		if senderErr != nil {
+			logger.Warnf("Failed to send metric to %v: %v", k, senderErr)
+		}
+	}
 }
 
-func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
+func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger, latencyMS float64) {
 	// Reset the failure count
 	now := time.Now()
 	zero := 0
@@ -116,7 +167,7 @@ func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnec
 		SuccessCount:        &successCount,
 	}
 	// If the monitor is down or Initializing, update the database
-	if monitor.Status == "Down" || monitor.Status == "Initializing" {
+	if strings.ToLower(monitor.Status) == "down" || monitor.Status == "initializing" {
 		// Only update if success threshold has been reached
 		if successCount >= monitor.SuccessThreshold {
 			up := "Up"
@@ -128,9 +179,33 @@ func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnec
 	if err != nil {
 		logger.Warnf("Failed to update monitor %s: %v", monitor.Name, err)
 	}
+	for k, v := range metrics {
+		senderErr := v.SendMetric([]sink.SendMetricInput{
+			{
+				Tags:        map[string]string{"monitor": monitor.Name, "monitor-type": monitor.MonitorType},
+				MetricName:  "status",
+				MetricValue: 1.0,
+				MetricUnit:  "None",
+				MetricTime:  time.Now(),
+				MonitorName: monitor.Name,
+			},
+			{
+				Tags:        map[string]string{"monitor": monitor.Name, "monitor-type": monitor.MonitorType},
+				MetricName:  "latency-ms",
+				MetricValue: latencyMS,
+				MetricUnit:  "None",
+				MetricTime:  time.Now(),
+				MonitorName: monitor.Name,
+			},
+		})
+		if senderErr != nil {
+			logger.Warnf("Failed to send metric to %v: %v", k, senderErr)
+		}
+	}
 }
 
 func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
+	ctx := context.TODO()
 	specificConfig := HTTPMonitorConfig{}
 	b, err := json.Marshal(monitor.Config)
 	if err != nil {
@@ -142,14 +217,14 @@ func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logge
 		logger.Warnf("Failed to unmarshal monitor %s config: %v", monitor.Name, err)
 		return
 	}
-	req, err := http.NewRequest(strings.ToUpper(specificConfig.Method), specificConfig.URL, strings.NewReader(specificConfig.RequestBody))
+	req, err := http.NewRequest(strings.ToUpper(specificConfig.Method), specificConfig.URL, strings.NewReader(injectSecretsIntoContent(ctx, database, specificConfig.RequestBody)))
 	if err != nil {
 		logger.Warnf("Failed to create request for monitor %s: %v", monitor.Name, err)
-		processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+		processMonitorCheckDownResult(err.Error(), monitor, database, logger, 0)
 		return
 	}
 	for k, v := range specificConfig.Headers {
-		req.Header.Set(k, v)
+		req.Header.Set(injectSecretsIntoContent(ctx, database, k), injectSecretsIntoContent(ctx, database, v))
 	}
 	client := &http.Client{}
 	if specificConfig.SkipTLSValidation {
@@ -162,20 +237,21 @@ func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logge
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		logger.Warnf("Failed to perform HTTP request for monitor %s: %v", monitor.Name, err)
-		processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+		processMonitorCheckDownResult(err.Error(), monitor, database, logger, 0)
 		return
 	}
+	latencyMSFloat64 := float64(time.Since(start).Milliseconds())
 	defer resp.Body.Close()
 	// Make sure request didn't breach timeout expectation
 	if time.Since(start) > time.Duration(specificConfig.TimeoutMS)*time.Millisecond {
-		logger.Warnf("HTTP request for monitor %s took longer than expected", monitor.Name)
-		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger)
+		logger.Warnf("HTTP request for monitor %s took longer than expected (%v vs limit of %v", monitor.Name, time.Since(start), time.Duration(specificConfig.TimeoutMS)*time.Millisecond)
+		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	// Check the response code
 	if resp.StatusCode != specificConfig.ExpectResponseCode {
 		logger.Warnf("HTTP request for monitor %s returned unexpected response code", monitor.Name)
-		processMonitorCheckDownResult(fmt.Sprintf("Expected response code %v, got %v", specificConfig.ExpectResponseCode, resp.StatusCode), monitor, database, logger)
+		processMonitorCheckDownResult(fmt.Sprintf("Expected response code %v, got %v", specificConfig.ExpectResponseCode, resp.StatusCode), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	// Check the body if need be
@@ -183,17 +259,17 @@ func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logge
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			logger.Warnf("Failed to read response body for monitor %s: %v", monitor.Name, err)
-			processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+			processMonitorCheckDownResult(err.Error(), monitor, database, logger, latencyMSFloat64)
 			return
 		}
 		if !strings.Contains(string(body), specificConfig.BodyContains) {
 			logger.Warnf("HTTP request for monitor %s returned unexpected response body", monitor.Name)
-			processMonitorCheckDownResult(fmt.Sprintf("Expected body to contain %v, got %v", specificConfig.BodyContains, string(body)), monitor, database, logger)
+			processMonitorCheckDownResult(fmt.Sprintf("Expected body to contain %v, got %v", specificConfig.BodyContains, string(body)), monitor, database, logger, latencyMSFloat64)
 			return
 		}
 	}
 	// If we got here, the monitor is up
-	processMonitorOkResult(monitor, database, logger)
+	processMonitorOkResult(monitor, database, logger, latencyMSFloat64)
 	return
 }
 
@@ -213,7 +289,7 @@ func doBrowserCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, lo
 	pw, launchErr := playwright.Run()
 	if launchErr != nil {
 		logger.Warnf("Failed to launch browser for monitor %s: %v", monitor.Name, launchErr)
-		processMonitorCheckDownResult(launchErr.Error(), monitor, database, logger)
+		processMonitorCheckDownResult(launchErr.Error(), monitor, database, logger, 0)
 		return
 	}
 	defer pw.Stop()
@@ -226,65 +302,66 @@ func doBrowserCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, lo
 		browser.browser, err = pw.Chromium.Launch()
 		if err != nil {
 			logger.Warnf("Failed to launch Chromium for monitor %s: %v", monitor.Name, err)
-			processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+			processMonitorCheckDownResult(err.Error(), monitor, database, logger, 0)
 			return
 		}
 	case "firefox":
 		browser.browser, err = pw.Firefox.Launch()
 		if err != nil {
 			logger.Warnf("Failed to launch Firefox for monitor %s: %v", monitor.Name, err)
-			processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+			processMonitorCheckDownResult(err.Error(), monitor, database, logger, 0)
 			return
 		}
 	case "webkit":
 		browser.browser, err = pw.WebKit.Launch()
 		if err != nil {
 			logger.Warnf("Failed to launch WebKit for monitor %s: %v", monitor.Name, err)
-			processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+			processMonitorCheckDownResult(err.Error(), monitor, database, logger, 0)
 			return
 		}
 	default:
 		logger.Warnf("Failed to launch browser for monitor %s: %v", monitor.Name, specificConfig.Browser)
-		processMonitorCheckDownResult(fmt.Sprintf("Failed to launch browser for monitor %s: %v", monitor.Name, specificConfig.Browser), monitor, database, logger)
+		processMonitorCheckDownResult(fmt.Sprintf("Failed to launch browser for monitor %s: %v", monitor.Name, specificConfig.Browser), monitor, database, logger, 0)
 		return
 	}
 	defer browser.browser.Close()
 	page, err := browser.browser.NewPage()
 	if err != nil {
 		logger.Warnf("Failed to create page for monitor %s: %v", monitor.Name, err)
-		processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+		processMonitorCheckDownResult(err.Error(), monitor, database, logger, 0)
 		return
 	}
 	start := time.Now()
 	resp, err := page.Goto(specificConfig.URL, playwright.PageGotoOptions{WaitUntil: playwright.WaitUntilStateNetworkidle})
+	latencyMSFloat64 := float64(time.Since(start).Milliseconds())
 	if err != nil {
 		logger.Warnf("Failed to navigate to URL for monitor %s: %v", monitor.Name, err)
-		processMonitorCheckDownResult(fmt.Sprintf("Failed to navigate to URL for monitor %s: %v", monitor.Name, err), monitor, database, logger)
+		processMonitorCheckDownResult(fmt.Sprintf("Failed to navigate to URL for monitor %s: %v", monitor.Name, err), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	if resp.Status() != specificConfig.ExpectResponseCode {
 		logger.Warnf("Response code for monitor %s was unexpected", monitor.Name)
-		processMonitorCheckDownResult(fmt.Sprintf("Expected response code %v, got %v", specificConfig.ExpectResponseCode, resp.Status()), monitor, database, logger)
+		processMonitorCheckDownResult(fmt.Sprintf("Expected response code %v, got %v", specificConfig.ExpectResponseCode, resp.Status()), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	if time.Since(start) > time.Duration(specificConfig.TimeoutMS)*time.Millisecond {
-		logger.Warnf("Request for monitor %s took longer than expected", monitor.Name)
-		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger)
+		logger.Warnf("Request for monitor %s took longer than expected (%v vs limit %v)", monitor.Name, time.Since(start), time.Duration(specificConfig.TimeoutMS)*time.Millisecond)
+		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	if specificConfig.BodyContains != "" {
 		body, err := page.Content()
 		if err != nil {
 			logger.Warnf("Failed to get page content for monitor %s: %v", monitor.Name, err)
-			processMonitorCheckDownResult(err.Error(), monitor, database, logger)
+			processMonitorCheckDownResult(err.Error(), monitor, database, logger, latencyMSFloat64)
 			return
 		}
 		if !strings.Contains(body, specificConfig.BodyContains) {
 			logger.Warnf("Page content for monitor %s was unexpected", monitor.Name)
-			processMonitorCheckDownResult(fmt.Sprintf("Expected body to contain %v, got %v", specificConfig.BodyContains, body), monitor, database, logger)
+			processMonitorCheckDownResult(fmt.Sprintf("Expected body to contain %v, got %v", specificConfig.BodyContains, body), monitor, database, logger, latencyMSFloat64)
 			return
 		}
 	}
 	// If we got here, the monitor is up
-	processMonitorOkResult(monitor, database, logger)
+	processMonitorOkResult(monitor, database, logger, latencyMSFloat64)
 }

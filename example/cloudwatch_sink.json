@@ -1,0 +1,7 @@
+{
+  "name": "cloudwatch",
+  "sink_type": "cloudwatch",
+  "config": {
+    "region": "us-west-2"
+  }
+}

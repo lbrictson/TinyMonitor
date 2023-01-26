@@ -137,7 +137,7 @@ func (db *DatabaseConnection) CreateMonitor(ctx context.Context, input CreateMon
 		SetMonitorType(input.MonitorType).
 		SetConfig(input.Config).
 		SetDescription(input.Description).
-		SetStatus("initializing").
+		SetStatus("Initializing").
 		SetSuccessThreshold(input.SuccessThreshold).
 		SetFailureThreshold(input.FailureThreshold).
 		Save(ctx)

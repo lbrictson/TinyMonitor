@@ -12,6 +12,7 @@ import (
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/predicate"
 	"github.com/lbrictson/TinyMonitor/ent/secret"
+	"github.com/lbrictson/TinyMonitor/ent/sink"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 
 	"entgo.io/ent"
@@ -28,6 +29,7 @@ const (
 	// Node types.
 	TypeMonitor = "Monitor"
 	TypeSecret  = "Secret"
+	TypeSink    = "Sink"
 	TypeUser    = "User"
 )
 
@@ -1771,6 +1773,485 @@ func (m *SecretMutation) ClearEdge(name string) error {
 // It returns an error if the edge is not defined in the schema.
 func (m *SecretMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown Secret edge %s", name)
+}
+
+// SinkMutation represents an operation that mutates the Sink nodes in the graph.
+type SinkMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *string
+	created_at    *time.Time
+	updated_at    *time.Time
+	sink_type     *string
+	_config       *map[string]interface{}
+	clearedFields map[string]struct{}
+	done          bool
+	oldValue      func(context.Context) (*Sink, error)
+	predicates    []predicate.Sink
+}
+
+var _ ent.Mutation = (*SinkMutation)(nil)
+
+// sinkOption allows management of the mutation configuration using functional options.
+type sinkOption func(*SinkMutation)
+
+// newSinkMutation creates new mutation for the Sink entity.
+func newSinkMutation(c config, op Op, opts ...sinkOption) *SinkMutation {
+	m := &SinkMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSink,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSinkID sets the ID field of the mutation.
+func withSinkID(id string) sinkOption {
+	return func(m *SinkMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Sink
+		)
+		m.oldValue = func(ctx context.Context) (*Sink, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Sink.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSink sets the old Sink of the mutation.
+func withSink(node *Sink) sinkOption {
+	return func(m *SinkMutation) {
+		m.oldValue = func(context.Context) (*Sink, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SinkMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SinkMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Sink entities.
+func (m *SinkMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SinkMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SinkMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Sink.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SinkMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SinkMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Sink entity.
+// If the Sink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SinkMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SinkMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *SinkMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *SinkMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Sink entity.
+// If the Sink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SinkMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *SinkMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetSinkType sets the "sink_type" field.
+func (m *SinkMutation) SetSinkType(s string) {
+	m.sink_type = &s
+}
+
+// SinkType returns the value of the "sink_type" field in the mutation.
+func (m *SinkMutation) SinkType() (r string, exists bool) {
+	v := m.sink_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSinkType returns the old "sink_type" field's value of the Sink entity.
+// If the Sink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SinkMutation) OldSinkType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSinkType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSinkType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSinkType: %w", err)
+	}
+	return oldValue.SinkType, nil
+}
+
+// ResetSinkType resets all changes to the "sink_type" field.
+func (m *SinkMutation) ResetSinkType() {
+	m.sink_type = nil
+}
+
+// SetConfig sets the "config" field.
+func (m *SinkMutation) SetConfig(value map[string]interface{}) {
+	m._config = &value
+}
+
+// Config returns the value of the "config" field in the mutation.
+func (m *SinkMutation) Config() (r map[string]interface{}, exists bool) {
+	v := m._config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConfig returns the old "config" field's value of the Sink entity.
+// If the Sink object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SinkMutation) OldConfig(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConfig: %w", err)
+	}
+	return oldValue.Config, nil
+}
+
+// ResetConfig resets all changes to the "config" field.
+func (m *SinkMutation) ResetConfig() {
+	m._config = nil
+}
+
+// Where appends a list predicates to the SinkMutation builder.
+func (m *SinkMutation) Where(ps ...predicate.Sink) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *SinkMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (Sink).
+func (m *SinkMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SinkMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.created_at != nil {
+		fields = append(fields, sink.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, sink.FieldUpdatedAt)
+	}
+	if m.sink_type != nil {
+		fields = append(fields, sink.FieldSinkType)
+	}
+	if m._config != nil {
+		fields = append(fields, sink.FieldConfig)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SinkMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case sink.FieldCreatedAt:
+		return m.CreatedAt()
+	case sink.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case sink.FieldSinkType:
+		return m.SinkType()
+	case sink.FieldConfig:
+		return m.Config()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SinkMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case sink.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case sink.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case sink.FieldSinkType:
+		return m.OldSinkType(ctx)
+	case sink.FieldConfig:
+		return m.OldConfig(ctx)
+	}
+	return nil, fmt.Errorf("unknown Sink field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SinkMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case sink.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case sink.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case sink.FieldSinkType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSinkType(v)
+		return nil
+	case sink.FieldConfig:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfig(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Sink field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SinkMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SinkMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SinkMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Sink numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SinkMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SinkMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SinkMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Sink nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SinkMutation) ResetField(name string) error {
+	switch name {
+	case sink.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case sink.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case sink.FieldSinkType:
+		m.ResetSinkType()
+		return nil
+	case sink.FieldConfig:
+		m.ResetConfig()
+		return nil
+	}
+	return fmt.Errorf("unknown Sink field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SinkMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SinkMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SinkMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SinkMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SinkMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SinkMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SinkMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown Sink unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SinkMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown Sink edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.

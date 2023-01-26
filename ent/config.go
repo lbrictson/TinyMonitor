@@ -26,6 +26,7 @@ type config struct {
 type hooks struct {
 	Monitor []ent.Hook
 	Secret  []ent.Hook
+	Sink    []ent.Hook
 	User    []ent.Hook
 }
 

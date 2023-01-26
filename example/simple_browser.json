@@ -1,0 +1,16 @@
+{
+  "name": "sample-browser",
+  "description": "Check a page using a headless browser",
+  "interval_seconds": 60,
+  "monitor_type": "browser",
+  "config": {
+    "browser": "chrome",
+    "expect_response_code": 200,
+    "expected_body_contains": "search",
+    "timeout_ms": 2000,
+    "url": "https://www.google.com"
+  },
+  "paused": false,
+  "success_threshold": 1,
+  "failure_threshold": 2
+}

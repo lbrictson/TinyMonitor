@@ -144,12 +144,16 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 func printTextMonitorData(data []api.MonitorModel) {
 	red := color.New(color.FgRed)
 	table := uitable.New()
-	table.AddRow("Name", "Type", "Interval", "Status", "Last Checked")
+	table.AddRow("Name", "Type", "Interval", "Status", "State", "Last Checked")
 	for _, x := range data {
+		state := "Active"
+		if x.Paused {
+			state = "Paused"
+		}
 		if x.Status == "Down" {
 			x.Status = red.Sprint(x.Status)
 		}
-		table.AddRow(x.Name, x.MonitorType, x.IntervalSeconds, fmt.Sprintf("%v (%v)", x.Status, x.StatusLastChangedFriendly), x.LastCheckedFriendly)
+		table.AddRow(x.Name, x.MonitorType, x.IntervalSeconds, fmt.Sprintf("%v (%v)", x.Status, x.StatusLastChangedFriendly), state, x.LastCheckedFriendly)
 	}
 	fmt.Println(table.String())
 }
@@ -169,7 +173,7 @@ func (c *APIClient) ListMonitors(options ListMonitorOptions, outputFormat string
 		Status: options.Status,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error listing monitors: %v", err)
 	}
 	if outputFormat == "json" {
 		return emitJSON(data)
@@ -181,7 +185,7 @@ func (c *APIClient) ListMonitors(options ListMonitorOptions, outputFormat string
 func (c *APIClient) GetMonitor(name string, outputformat string) error {
 	monitor, err := c.sdk.GetMonitor(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting monitor %v: %v", name, err)
 	}
 	if outputformat == "json" {
 		return emitJSON(monitor)
@@ -193,7 +197,7 @@ func (c *APIClient) GetMonitor(name string, outputformat string) error {
 func (c *APIClient) EditMonitor(name string) error {
 	data, err := c.sdk.GetMonitor(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("error editing monitor %v: %v", name, err)
 	}
 	monitor := api.UpdateMonitorInput{
 		IntervalSeconds:  &data.IntervalSeconds,
@@ -205,12 +209,12 @@ func (c *APIClient) EditMonitor(name string) error {
 	}
 	editedData, err := editStructInEditor(monitor)
 	if err != nil {
-		return err
+		return fmt.Errorf("error editing monitor %v: %v", name, err)
 	}
 	editedMonitor := api.UpdateMonitorInput{}
 	err = json.Unmarshal(editedData, &editedMonitor)
 	if err != nil {
-		return err
+		return fmt.Errorf("error editing monitor %v: %v", name, err)
 	}
 	Updates := api.UpdateMonitorInput{
 		IntervalSeconds: editedMonitor.IntervalSeconds,
@@ -220,7 +224,7 @@ func (c *APIClient) EditMonitor(name string) error {
 	}
 	_, err = c.sdk.UpdateMonitor(name, Updates)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating monitor %v: %v", name, err)
 	}
 	fmt.Println("monitor updated")
 	return nil
@@ -230,13 +234,13 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 	// Read in the specified file
 	file, err := os.ReadFile(fileLocation)
 	if err != nil {
-		return err
+		return fmt.Errorf("error reading file %v: %v", fileLocation, err)
 	}
 	// Unmarshal the file into a monitor model
 	monitor := api.MonitorModel{}
 	err = json.Unmarshal(file, &monitor)
 	if err != nil {
-		return err
+		return fmt.Errorf("error unmarshalling file %v: %v", fileLocation, err)
 	}
 	// See if the monitor already exists
 	_, err = c.sdk.GetMonitor(monitor.Name)
@@ -252,7 +256,7 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 			FailureThreshold: monitor.FailureThreshold,
 		})
 		if err != nil {
-			return err
+			return fmt.Errorf("error creating monitor %v: %v", monitor.Name, err)
 		}
 		fmt.Println("monitor created")
 		return nil
@@ -267,7 +271,7 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 		FailureThreshold: &monitor.FailureThreshold,
 	})
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating monitor %v: %v", monitor.Name, err)
 	}
 	fmt.Println("monitor updated")
 	return nil
@@ -276,7 +280,7 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 func (c *APIClient) DeleteMonitor(name string, outputformat string) error {
 	err := c.sdk.DeleteMonitor(name)
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting monitor %v: %v", name, err)
 	}
 	fmt.Println("monitor deleted")
 	return nil

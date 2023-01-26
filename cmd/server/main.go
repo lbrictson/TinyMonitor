@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
 	"github.com/lbrictson/TinyMonitor/pkg/config"
 	"github.com/lbrictson/TinyMonitor/pkg/db"
@@ -16,10 +17,12 @@ func main() {
 		playwright.Install()
 		return
 	}
+	browserEnabled := true
 	// Setup browser automation testing
 	err := playwright.Install()
 	if err != nil {
-		panic(err)
+		browserEnabled = false
+		fmt.Printf("Error install playwright headless browser packages %v, browser based monitors will be disabled\n", err)
 	}
 	conf, err := config.ReadServerConfig()
 	if err != nil {
@@ -55,11 +58,12 @@ func main() {
 		l.Fatalf("Error connecting to database: %v", err)
 	}
 	s, err := api.NewServer(api.NewServerInput{
-		Port:         conf.Port,
-		AutoTLS:      conf.AutoTLS,
-		Hostname:     conf.Hostname,
-		Logger:       l,
-		DBConnection: dbConn,
+		Port:                     conf.Port,
+		AutoTLS:                  conf.AutoTLS,
+		Hostname:                 conf.Hostname,
+		Logger:                   l,
+		DBConnection:             dbConn,
+		BrowserMonitoringEnabled: browserEnabled,
 	})
 	if err != nil {
 		l.Fatalf("Failed to create server: %v", err)

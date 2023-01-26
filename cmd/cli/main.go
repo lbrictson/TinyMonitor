@@ -35,7 +35,7 @@ func main() {
 		Usage:    "The TinyMonitor CLI interface",
 		Version:  "0.0.1",
 		Flags:    flags,
-		Commands: []*cli.Command{c.LoadUserCLICommands(), c.LoadMonitorCLICommands()},
+		Commands: []*cli.Command{c.LoadUserCLICommands(), c.LoadMonitorCLICommands(), c.LoadSecretCLICommands(), c.LoadSinkCLICommands()},
 	}
 	app.Flags = flags
 	if err := app.Run(os.Args); err != nil {

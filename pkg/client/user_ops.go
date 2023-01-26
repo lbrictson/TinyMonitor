@@ -145,7 +145,7 @@ func (c *APIClient) ListUsers(outputFormat string) error {
 func (c *APIClient) GetUser(username string, outputformat string) error {
 	user, err := c.sdk.GetUser(username)
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting user %v: %s", username, err)
 	}
 	if outputformat == "json" {
 		return emitJSON(user)
@@ -157,7 +157,7 @@ func (c *APIClient) GetUser(username string, outputformat string) error {
 func (c *APIClient) CreateUser(username string, role string, outputformat string) error {
 	user, err := c.sdk.CreateUser(username, role)
 	if err != nil {
-		return err
+		return fmt.Errorf("error creating user %v: %s", username, err)
 	}
 	fmt.Printf("User %v created successfully, API key is: %v\n", username, *user)
 	return nil
@@ -166,7 +166,7 @@ func (c *APIClient) CreateUser(username string, role string, outputformat string
 func (c *APIClient) DeleteUser(username string, outputformat string) error {
 	err := c.sdk.DeleteUser(username)
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting user %v: %s", username, err)
 	}
 	fmt.Printf("User %v deleted successfully\n", username)
 	return nil
@@ -175,7 +175,7 @@ func (c *APIClient) DeleteUser(username string, outputformat string) error {
 func (c *APIClient) ChangeUserRole(username string, newRole string, outputformat string) error {
 	_, err := c.sdk.UpdateUser(username, newRole)
 	if err != nil {
-		return err
+		return fmt.Errorf("error updating user %v: %s", username, err)
 	}
 	fmt.Printf("User %v role changed successfully to %v\n", username, newRole)
 	return nil

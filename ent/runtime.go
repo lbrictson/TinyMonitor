@@ -8,6 +8,7 @@ import (
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/schema"
 	"github.com/lbrictson/TinyMonitor/ent/secret"
+	"github.com/lbrictson/TinyMonitor/ent/sink"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 )
 
@@ -120,6 +121,54 @@ func init() {
 	// secret.IDValidator is a validator for the "id" field. It is called by the builders before save.
 	secret.IDValidator = func() func(string) error {
 		validators := secretDescID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(id string) error {
+			for _, fn := range fns {
+				if err := fn(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	sinkFields := schema.Sink{}.Fields()
+	_ = sinkFields
+	// sinkDescCreatedAt is the schema descriptor for created_at field.
+	sinkDescCreatedAt := sinkFields[1].Descriptor()
+	// sink.DefaultCreatedAt holds the default value on creation for the created_at field.
+	sink.DefaultCreatedAt = sinkDescCreatedAt.Default.(func() time.Time)
+	// sinkDescUpdatedAt is the schema descriptor for updated_at field.
+	sinkDescUpdatedAt := sinkFields[2].Descriptor()
+	// sink.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	sink.DefaultUpdatedAt = sinkDescUpdatedAt.Default.(func() time.Time)
+	// sink.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	sink.UpdateDefaultUpdatedAt = sinkDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// sinkDescSinkType is the schema descriptor for sink_type field.
+	sinkDescSinkType := sinkFields[3].Descriptor()
+	// sink.SinkTypeValidator is a validator for the "sink_type" field. It is called by the builders before save.
+	sink.SinkTypeValidator = func() func(string) error {
+		validators := sinkDescSinkType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(sink_type string) error {
+			for _, fn := range fns {
+				if err := fn(sink_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// sinkDescID is the schema descriptor for id field.
+	sinkDescID := sinkFields[0].Descriptor()
+	// sink.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	sink.IDValidator = func() func(string) error {
+		validators := sinkDescID.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),

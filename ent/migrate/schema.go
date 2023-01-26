@@ -47,6 +47,20 @@ var (
 		Columns:    SecretsColumns,
 		PrimaryKey: []*schema.Column{SecretsColumns[0]},
 	}
+	// SinksColumns holds the columns for the "sinks" table.
+	SinksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Size: 50},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "sink_type", Type: field.TypeString, Size: 150},
+		{Name: "config", Type: field.TypeJSON},
+	}
+	// SinksTable holds the schema information for the "sinks" table.
+	SinksTable = &schema.Table{
+		Name:       "sinks",
+		Columns:    SinksColumns,
+		PrimaryKey: []*schema.Column{SinksColumns[0]},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 50},
@@ -67,6 +81,7 @@ var (
 	Tables = []*schema.Table{
 		MonitorsTable,
 		SecretsTable,
+		SinksTable,
 		UsersTable,
 	}
 )

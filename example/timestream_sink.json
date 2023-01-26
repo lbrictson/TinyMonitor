@@ -1,0 +1,9 @@
+{
+  "name": "timestream",
+  "sink_type": "timestream",
+  "config": {
+    "db_name": "monitoring-test",
+    "table_name": "status",
+    "region": "us-west-2"
+  }
+}

@@ -12,6 +12,7 @@ import (
 
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/secret"
+	"github.com/lbrictson/TinyMonitor/ent/sink"
 	"github.com/lbrictson/TinyMonitor/ent/user"
 
 	"entgo.io/ent/dialect"
@@ -27,6 +28,8 @@ type Client struct {
 	Monitor *MonitorClient
 	// Secret is the client for interacting with the Secret builders.
 	Secret *SecretClient
+	// Sink is the client for interacting with the Sink builders.
+	Sink *SinkClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -44,6 +47,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Monitor = NewMonitorClient(c.config)
 	c.Secret = NewSecretClient(c.config)
+	c.Sink = NewSinkClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -80,6 +84,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		config:  cfg,
 		Monitor: NewMonitorClient(cfg),
 		Secret:  NewSecretClient(cfg),
+		Sink:    NewSinkClient(cfg),
 		User:    NewUserClient(cfg),
 	}, nil
 }
@@ -102,6 +107,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		config:  cfg,
 		Monitor: NewMonitorClient(cfg),
 		Secret:  NewSecretClient(cfg),
+		Sink:    NewSinkClient(cfg),
 		User:    NewUserClient(cfg),
 	}, nil
 }
@@ -133,6 +139,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Monitor.Use(hooks...)
 	c.Secret.Use(hooks...)
+	c.Sink.Use(hooks...)
 	c.User.Use(hooks...)
 }
 
@@ -314,6 +321,96 @@ func (c *SecretClient) GetX(ctx context.Context, id string) *Secret {
 // Hooks returns the client hooks.
 func (c *SecretClient) Hooks() []Hook {
 	return c.hooks.Secret
+}
+
+// SinkClient is a client for the Sink schema.
+type SinkClient struct {
+	config
+}
+
+// NewSinkClient returns a client for the Sink from the given config.
+func NewSinkClient(c config) *SinkClient {
+	return &SinkClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `sink.Hooks(f(g(h())))`.
+func (c *SinkClient) Use(hooks ...Hook) {
+	c.hooks.Sink = append(c.hooks.Sink, hooks...)
+}
+
+// Create returns a builder for creating a Sink entity.
+func (c *SinkClient) Create() *SinkCreate {
+	mutation := newSinkMutation(c.config, OpCreate)
+	return &SinkCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Sink entities.
+func (c *SinkClient) CreateBulk(builders ...*SinkCreate) *SinkCreateBulk {
+	return &SinkCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Sink.
+func (c *SinkClient) Update() *SinkUpdate {
+	mutation := newSinkMutation(c.config, OpUpdate)
+	return &SinkUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SinkClient) UpdateOne(s *Sink) *SinkUpdateOne {
+	mutation := newSinkMutation(c.config, OpUpdateOne, withSink(s))
+	return &SinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SinkClient) UpdateOneID(id string) *SinkUpdateOne {
+	mutation := newSinkMutation(c.config, OpUpdateOne, withSinkID(id))
+	return &SinkUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Sink.
+func (c *SinkClient) Delete() *SinkDelete {
+	mutation := newSinkMutation(c.config, OpDelete)
+	return &SinkDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SinkClient) DeleteOne(s *Sink) *SinkDeleteOne {
+	return c.DeleteOneID(s.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SinkClient) DeleteOneID(id string) *SinkDeleteOne {
+	builder := c.Delete().Where(sink.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SinkDeleteOne{builder}
+}
+
+// Query returns a query builder for Sink.
+func (c *SinkClient) Query() *SinkQuery {
+	return &SinkQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a Sink entity by its id.
+func (c *SinkClient) Get(ctx context.Context, id string) (*Sink, error) {
+	return c.Query().Where(sink.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SinkClient) GetX(ctx context.Context, id string) *Sink {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *SinkClient) Hooks() []Hook {
+	return c.hooks.Sink
 }
 
 // UserClient is a client for the User schema.

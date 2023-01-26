@@ -1,0 +1,10 @@
+{
+  "name": "influxdb-v1",
+  "sink_type": "influxdb-v1",
+  "config": {
+    "username": "admin",
+    "password": "admin",
+    "database": "test",
+    "host": "http://localhost:8086"
+  }
+}

@@ -12,22 +12,26 @@ import (
 	"time"
 )
 
+var allowBrowserMonitors = false
+
 type Server struct {
-	port         int    // Port to listen on
-	autoTLS      bool   // If true, use Let's Encrypt to automatically get a TLS certificate
-	hostname     string // Hostname must be set if using AutoTLS, also used when sending email alerts for callback URLs
-	logger       *logrus.Logger
-	dbConnection *db.DatabaseConnection
-	memoryCache  *cache.Cache
+	port                     int    // Port to listen on
+	autoTLS                  bool   // If true, use Let's Encrypt to automatically get a TLS certificate
+	hostname                 string // Hostname must be set if using AutoTLS, also used when sending email alerts for callback URLs
+	logger                   *logrus.Logger
+	dbConnection             *db.DatabaseConnection
+	memoryCache              *cache.Cache
+	browserMonitoringEnabled bool
 }
 
 // NewServerInput is the input for creating a Server.
 type NewServerInput struct {
-	Port         int            // Port to listen on
-	AutoTLS      bool           // If true, use Let's Encrypt to automatically get a TLS certificate
-	Hostname     string         // Hostname must be set if using AutoTLS, also used when sending email alerts for callback URLs
-	Logger       *logrus.Logger // Logger to use for logging
-	DBConnection *db.DatabaseConnection
+	Port                     int            // Port to listen on
+	AutoTLS                  bool           // If true, use Let's Encrypt to automatically get a TLS certificate
+	Hostname                 string         // Hostname must be set if using AutoTLS, also used when sending email alerts for callback URLs
+	Logger                   *logrus.Logger // Logger to use for logging
+	DBConnection             *db.DatabaseConnection
+	BrowserMonitoringEnabled bool // If true, browser monitoring will be enabled
 }
 
 // NewServer creates a new api server.
@@ -45,12 +49,13 @@ func NewServer(input NewServerInput) (*Server, error) {
 		return nil, errors.New("Logger must be set")
 	}
 	return &Server{
-		port:         input.Port,
-		autoTLS:      input.AutoTLS,
-		hostname:     input.Hostname,
-		logger:       input.Logger,
-		dbConnection: input.DBConnection,
-		memoryCache:  cache.New(5*time.Minute, 10*time.Minute),
+		port:                     input.Port,
+		autoTLS:                  input.AutoTLS,
+		hostname:                 input.Hostname,
+		logger:                   input.Logger,
+		dbConnection:             input.DBConnection,
+		memoryCache:              cache.New(5*time.Minute, 10*time.Minute),
+		browserMonitoringEnabled: input.BrowserMonitoringEnabled,
 	}, nil
 }
 
@@ -59,19 +64,32 @@ func (s *Server) Run() {
 	e := echo.New()
 	e.HideBanner = true
 	e.HidePort = true
+	// Flip on browser monitoring if need be
+	allowBrowserMonitors = s.browserMonitoringEnabled
 	// Monitor API
 	e.GET("/api/v1/monitor", s.listMonitors, s.userAuthRequired)
 	e.GET("/api/v1/monitor/:id", s.getMonitor, s.userAuthRequired)
 	e.POST("/api/v1/monitor", s.createMonitor, s.userAuthRequired, s.writeRequired)
 	e.PATCH("/api/v1/monitor/:id", s.updateMonitor, s.userAuthRequired, s.writeRequired)
 	e.DELETE("/api/v1/monitor/:id", s.deleteMonitor, s.userAuthRequired, s.writeRequired)
-
 	// User API
 	e.GET("/api/v1/user/:id", s.getUser, s.userAuthRequired)
 	e.GET("/api/v1/user", s.listUsers, s.userAuthRequired)
 	e.DELETE("/api/v1/user/:id", s.deleteUser, s.userAuthRequired, s.adminRequired)
 	e.POST("/api/v1/user", s.createUser, s.userAuthRequired, s.adminRequired)
 	e.PATCH("/api/v1/user/:id", s.updateUser, s.userAuthRequired, s.adminRequired)
+	// Secret API
+	e.GET("/api/v1/secret", s.listSecrets, s.userAuthRequired)
+	e.POST("/api/v1/secret", s.createSecret, s.userAuthRequired, s.adminRequired)
+	e.DELETE("/api/v1/secret/:id", s.deleteSecret, s.userAuthRequired, s.adminRequired)
+	e.GET("/api/v1/secret/:id", s.getSecret, s.userAuthRequired)
+	e.PATCH("/api/v1/secret/:id", s.updateSecret, s.userAuthRequired, s.adminRequired)
+	// Sink API
+	e.GET("/api/v1/sink", s.listSinks, s.userAuthRequired)
+	e.POST("/api/v1/sink", s.createSink, s.userAuthRequired, s.adminRequired)
+	e.DELETE("/api/v1/sink/:id", s.deleteSink, s.userAuthRequired, s.adminRequired)
+	e.GET("/api/v1/sink/:id", s.getSink, s.userAuthRequired)
+	e.PATCH("/api/v1/sink/:id", s.updateSink, s.userAuthRequired, s.adminRequired)
 	// Utility routes
 	e.GET("/api/v1/health", func(c echo.Context) error {
 		return c.String(200, "OK")
@@ -81,6 +99,10 @@ func (s *Server) Run() {
 		s.logger.Warn("Running in testing mode")
 	}
 	go s.initialStartMonitors()
+	metricLoaderError := s.loadMetrics()
+	if metricLoaderError != nil {
+		s.logger.WithError(metricLoaderError).Errorf("Failed to load metric sinks, proceeding to start without them: %v", metricLoaderError)
+	}
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%v", s.port)))
 	return
 }

@@ -1,0 +1,22 @@
+{
+  "name": "sample-monitor",
+  "description": "This is a human readable description, it wills how up in alerts",
+  "interval_seconds": 60,
+  "monitor_type": "http",
+  "config": {
+    "expect_response_code": 200,
+    "expected_body_contains": "search",
+    "headers": {
+      "api-key": "${{this-users-a-secret-value}}",
+      "content-type": "application/json"
+    },
+    "method": "GET",
+    "request_body": "",
+    "skip_tls_validation": true,
+    "timeout_ms": 200,
+    "url": "https://www.google.com"
+  },
+  "paused": false,
+  "success_threshold": 1,
+  "failure_threshold": 3
+}

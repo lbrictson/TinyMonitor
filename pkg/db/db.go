@@ -7,13 +7,16 @@ import (
 	entsql "entgo.io/ent/dialect/sql"
 	"fmt"
 	"github.com/lbrictson/TinyMonitor/ent"
+	"github.com/patrickmn/go-cache"
 	_ "modernc.org/sqlite"
 	"os"
+	"time"
 )
 
 // DatabaseConnection is a wrapper around the ent client
 type DatabaseConnection struct {
-	client *ent.Client
+	client      *ent.Client
+	secretCache *cache.Cache
 }
 
 type NewDatabaseConnectionInput struct {
@@ -32,7 +35,10 @@ func NewDatabaseConnection(input NewDatabaseConnectionInput) (*DatabaseConnectio
 		}
 		drv := entsql.OpenDB(dialect.SQLite, db)
 		conn := ent.NewClient(ent.Driver(drv))
-		return &DatabaseConnection{client: conn}, migrate(conn)
+		return &DatabaseConnection{
+			client:      conn,
+			secretCache: cache.New(cache.NoExpiration, 10*time.Minute),
+		}, migrate(conn)
 	}
 	// Grab the last character of the location
 	lastChar := input.Location[len(input.Location)-1:]
@@ -51,7 +57,7 @@ func NewDatabaseConnection(input NewDatabaseConnectionInput) (*DatabaseConnectio
 	}
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	conn := ent.NewClient(ent.Driver(drv))
-	return &DatabaseConnection{client: conn}, migrate(conn)
+	return &DatabaseConnection{client: conn, secretCache: cache.New(cache.NoExpiration, 10*time.Minute)}, migrate(conn)
 }
 
 // migrate runs all database migrations

@@ -106,6 +106,7 @@ func (s *Server) listMonitors(c echo.Context) error {
 }
 
 func (s *Server) getMonitor(c echo.Context) error {
+
 	monitor, err := s.dbConnection.GetMonitorByName(c.Request().Context(), c.Param("id"))
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

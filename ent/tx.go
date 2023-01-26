@@ -16,6 +16,8 @@ type Tx struct {
 	Monitor *MonitorClient
 	// Secret is the client for interacting with the Secret builders.
 	Secret *SecretClient
+	// Sink is the client for interacting with the Sink builders.
+	Sink *SinkClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -151,6 +153,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Monitor = NewMonitorClient(tx.config)
 	tx.Secret = NewSecretClient(tx.config)
+	tx.Sink = NewSinkClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

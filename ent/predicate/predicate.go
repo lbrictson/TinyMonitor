@@ -12,5 +12,8 @@ type Monitor func(*sql.Selector)
 // Secret is the predicate function for secret builders.
 type Secret func(*sql.Selector)
 
+// Sink is the predicate function for sink builders.
+type Sink func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
