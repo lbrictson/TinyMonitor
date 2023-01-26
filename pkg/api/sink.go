@@ -126,7 +126,7 @@ func (s *Server) createSink(c echo.Context) error {
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
-	loadSingleSinkIntoMetrics(*convertDBSinkToAPISink(sink))
+	loadSingleSinkIntoMetrics(*convertDBSinkToAPISink(sink), s.dbConnection)
 	return s.returnSuccessResponse(c, http.StatusCreated, convertDBSinkToAPISink(sink))
 }
 
@@ -155,7 +155,7 @@ func (s *Server) updateSink(c echo.Context) error {
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
-	loadSingleSinkIntoMetrics(*convertDBSinkToAPISink(sink))
+	loadSingleSinkIntoMetrics(*convertDBSinkToAPISink(sink), s.dbConnection)
 	return s.returnSuccessResponse(c, http.StatusOK, convertDBSinkToAPISink(sink))
 }
 

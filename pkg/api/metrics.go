@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/lbrictson/TinyMonitor/pkg/sink"
 	"os"
 	"strings"
@@ -18,7 +19,7 @@ func (s *Server) loadMetrics() error {
 		return err
 	}
 	for _, r := range m {
-		err = loadSingleSinkIntoMetrics(*convertDBSinkToAPISink(r))
+		err = loadSingleSinkIntoMetrics(*convertDBSinkToAPISink(r), s.dbConnection)
 		if err != nil {
 			return err
 		}
@@ -32,7 +33,7 @@ func removeSinkFromMetrics(name string) {
 	delete(metrics, name)
 }
 
-func loadSingleSinkIntoMetrics(s BaseSink) error {
+func loadSingleSinkIntoMetrics(s BaseSink, databaseConn *db.DatabaseConnection) error {
 	metricLock.Lock()
 	defer metricLock.Unlock()
 	hostname, err := os.Hostname()
@@ -51,10 +52,10 @@ func loadSingleSinkIntoMetrics(s BaseSink) error {
 			return err
 		}
 		m, err := sink.NewInfluxDBV1Sink(sink.NewInfluxDBV1SinkInput{
-			DatabaseName:   conf.Database,
-			Username:       conf.Username,
-			Password:       conf.Password,
-			ServerURL:      conf.Host,
+			DatabaseName:   injectSecretsIntoContent(context.TODO(), databaseConn, conf.Database),
+			Username:       injectSecretsIntoContent(context.TODO(), databaseConn, conf.Username),
+			Password:       injectSecretsIntoContent(context.TODO(), databaseConn, conf.Password),
+			ServerURL:      injectSecretsIntoContent(context.TODO(), databaseConn, conf.Host),
 			SenderHostname: hostname,
 		})
 		if err != nil {
@@ -68,9 +69,9 @@ func loadSingleSinkIntoMetrics(s BaseSink) error {
 			return err
 		}
 		m, err := sink.NewCloudWatchSink(sink.NewCloudWatchSinkInput{
-			Region:       conf.Region,
-			AWSSecretKey: conf.AWSSecretAccessKey,
-			AWSAccessKey: conf.AWSAccessKeyID,
+			Region:       injectSecretsIntoContent(context.TODO(), databaseConn, conf.Region),
+			AWSSecretKey: injectSecretsIntoContent(context.TODO(), databaseConn, conf.AWSSecretAccessKey),
+			AWSAccessKey: injectSecretsIntoContent(context.TODO(), databaseConn, conf.AWSAccessKeyID),
 		})
 		if err != nil {
 			return err
@@ -83,11 +84,11 @@ func loadSingleSinkIntoMetrics(s BaseSink) error {
 			return err
 		}
 		m, err := sink.NewTimeStreamSink(sink.NewTimeStreamSinkInput{
-			DatabaseName: conf.DBName,
-			TableName:    conf.TableName,
-			Region:       conf.Region,
-			AWSSecretKey: conf.AWSSecretAccessKey,
-			AWSAccessKey: conf.AWSAccessKeyID,
+			DatabaseName: injectSecretsIntoContent(context.TODO(), databaseConn, conf.DBName),
+			TableName:    injectSecretsIntoContent(context.TODO(), databaseConn, conf.TableName),
+			Region:       injectSecretsIntoContent(context.TODO(), databaseConn, conf.Region),
+			AWSSecretKey: injectSecretsIntoContent(context.TODO(), databaseConn, conf.AWSSecretAccessKey),
+			AWSAccessKey: injectSecretsIntoContent(context.TODO(), databaseConn, conf.AWSAccessKeyID),
 		})
 		if err != nil {
 			return err
