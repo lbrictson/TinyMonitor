@@ -5,6 +5,6 @@
     "username": "admin",
     "password": "admin",
     "database": "test",
-    "host": "http://localhost:8086"
+    "host": "http://influxdb:8086"
   }
 }
