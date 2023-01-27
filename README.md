@@ -29,7 +29,7 @@ Interact with the Service
 
 Create a metric sink for the influxdb container
 
-`tmp/tinymonitor sink apply -f example/inflxudb_v1_sink.json`
+`tmp/tinymonitor sink apply -f example/influxdb_v1_sink.json`
 
 Create some sample monitors
 
