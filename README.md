@@ -1,15 +1,59 @@
 # TinyMonitor
 A headless monitoring system, designed to be simple to use and easy to maintain
 
-### Running Locally
+### Running Locally with Docker-Compose
+
+`docker-compose up -d --build`
+
+If this is your first time launching get your API key from the logs.  It's only shown once
+
+`docker-compose logs tinymonitor`
+
+Create your CLI config file in `~/.tinymonitor/config.json`
+
+```json
+{
+"server_url": "http://localhost:8080",
+"username": "admin",
+"api_key": "API-Key-From-Logs"
+}
+```
+
+Build the CLI
+
+`go build -o=tmp/tinymonitor cmd/tinymonitor/main.go`
+
+Interact with the Service
+
+`tmp/tinymonitor monitor list`
+
+Create a metric sink for the influxdb container
+
+`tmp/tinymonitor sink apply -f example/inflxudb_v1_sink.json`
+
+Create some sample monitors
+
+```
+tmp/tinymonitor monitor apply -f example/simple_browser.json
+tmp/tinymonitor monitor apply -f example/simple_http.json
+tmp/tinymonitor monitor apply -f example/simple_ping.json
+```
+
+Optional:  Setup InfluxDB in Grafana
+
+1.  Navigate to localhost:3000 (admin/admin)
+2.  Add a new datasource:  Type Influxdb, host: http://influxdb:8086, database: test
+
+
+### Running Locally (Non Docker)
 
 Starting the web server:
 
-`TINYMONITOR_TESTING=true go run cmd/server/main.go`
+`TINYMONITOR_TESTING=true go run cmd/tinymonitor/main.go server`
 
 Running the CLI
 
-`go run cmd/cli/main.go`
+`go run cmd/tinymonitor/main.go`
 
 Hot reload for the web server is provided through air
 

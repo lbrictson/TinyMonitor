@@ -3,16 +3,31 @@ package main
 import (
 	"fmt"
 	"github.com/lbrictson/TinyMonitor/pkg/api"
+	"github.com/lbrictson/TinyMonitor/pkg/client"
 	"github.com/lbrictson/TinyMonitor/pkg/config"
 	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/lbrictson/TinyMonitor/pkg/seeder"
 	_ "github.com/lib/pq"
 	"github.com/playwright-community/playwright-go"
 	"github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 	"os"
+	"strings"
 )
 
 func main() {
+	arg := ""
+	if len(os.Args) >= 2 {
+		arg = os.Args[1]
+	}
+	if strings.ToLower(arg) == "server" {
+		runServer()
+	} else {
+		runCLI()
+	}
+}
+
+func runServer() {
 	if os.Getenv("SETUP_PLAYWRIGHT") == "true" {
 		playwright.Install()
 		return
@@ -73,4 +88,41 @@ func main() {
 		l.Fatalf("Failed to seed DB: %v", err)
 	}
 	s.Run()
+}
+
+var c *client.APIClient
+
+func runCLI() {
+	config, err := client.ReadConfig()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	c = client.NewAPIClient(config.ServerURL, config.Username, config.APIKey)
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:    "version",
+		Aliases: []string{"v"},
+		Usage:   "print only the version",
+	}
+	flags := []cli.Flag{
+		&cli.StringFlag{
+			Name:     "output",
+			Aliases:  []string{"o"},
+			Value:    "text",
+			Usage:    "Output format. One of: text, json",
+			Required: false,
+		},
+	}
+	app := &cli.App{
+		Name:     "tiny-monitor",
+		Usage:    "The TinyMonitor CLI interface",
+		Version:  "0.0.1",
+		Flags:    flags,
+		Commands: []*cli.Command{c.LoadUserCLICommands(), c.LoadMonitorCLICommands(), c.LoadSecretCLICommands(), c.LoadSinkCLICommands(), c.LoadAlertChannelCLICommands()},
+	}
+	app.Flags = flags
+	if err := app.Run(os.Args); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 }

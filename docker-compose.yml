@@ -1,0 +1,30 @@
+version: "3"  # optional since v1.27.0
+services:
+  tinymonitor:
+    volumes:
+      - tinymonitordata:/app/data
+    ports:
+      - "8080:8080"
+    build:
+        context: .
+        dockerfile: Dockerfile
+  influxdb:
+    platform: linux/x86_64
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxstorage:/var/lib/influxd
+    image: docker.io/library/influxdb:1.7-alpine
+    environment:
+      - INFLUXDB_DB=test
+  grafana:
+    platform: linux/x86_64
+    ports:
+      - "3000:3000"
+    image: docker.io/grafana/grafana-oss:9.0.2
+    volumes:
+      - grafanastorage:/var/lib/grafana
+volumes:
+  tinymonitordata:
+  influxstorage:
+  grafanastorage:

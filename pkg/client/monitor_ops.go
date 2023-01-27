@@ -133,6 +133,70 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 				},
 			},
 			{
+				Name:        "pause",
+				Description: "pause monitor from being checked",
+				Usage:       "monitor pause $name",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.PauseMonitor(context.Args().First(), context.String("output"))
+				},
+			},
+			{
+				Name:        "unpause",
+				Description: "unpause monitor",
+				Usage:       "monitor unpause $name",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.UnPauseMonitor(context.Args().First(), context.String("output"))
+				},
+			},
+			{
+				Name:        "silence",
+				Description: "silence monitor so that it no longer sends alerts",
+				Usage:       "monitor silence $name",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.SilenceMonitor(context.Args().First(), context.String("output"))
+				},
+			},
+			{
+				Name:        "unsilence",
+				Description: "unsilence monitor so that it sends alerts again",
+				Usage:       "monitor unsilence $name",
+				Flags: []cli.Flag{
+					&cli.StringFlag{
+						Name:    "output",
+						Aliases: []string{"o"},
+						Value:   "text",
+						Usage:   "Output format (text or json)",
+					},
+				},
+				Action: func(context *cli.Context) error {
+					return c.UnSilenceMonitor(context.Args().First(), context.String("output"))
+				},
+			},
+			{
 				Name:        "apply",
 				Description: "edit/create monitor via file",
 				Usage:       "monitor apply -f $fileLocation",
@@ -168,6 +232,9 @@ func printTextMonitorData(data []api.MonitorModel) {
 		}
 		if x.Status == "Down" {
 			x.Status = red.Sprint(x.Status)
+		}
+		if x.Silenced {
+			x.Status = x.Status + " (Silenced)"
 		}
 		table.AddRow(x.Name, x.MonitorType, x.IntervalSeconds, fmt.Sprintf("%v (%v)", x.Status, x.StatusLastChangedFriendly), state, x.LastCheckedFriendly)
 	}
@@ -323,5 +390,53 @@ func (c *APIClient) DeleteMonitor(name string, outputformat string) error {
 		return fmt.Errorf("error deleting monitor %v: %v", name, err)
 	}
 	fmt.Println("monitor deleted")
+	return nil
+}
+
+func (c *APIClient) SilenceMonitor(name string, outputformat string) error {
+	silence := true
+	_, err := c.sdk.UpdateMonitor(name, api.UpdateMonitorInput{
+		Silenced: &silence,
+	})
+	if err != nil {
+		return fmt.Errorf("error silencing monitor %v: %v", name, err)
+	}
+	fmt.Printf("monitor %v silenced\n", name)
+	return nil
+}
+
+func (c *APIClient) UnSilenceMonitor(name string, outputformat string) error {
+	silence := false
+	_, err := c.sdk.UpdateMonitor(name, api.UpdateMonitorInput{
+		Silenced: &silence,
+	})
+	if err != nil {
+		return fmt.Errorf("error unsilenced monitor %v: %v", name, err)
+	}
+	fmt.Printf("monitor %v unsilenced\n", name)
+	return nil
+}
+
+func (c *APIClient) PauseMonitor(name string, outputformat string) error {
+	pause := true
+	_, err := c.sdk.UpdateMonitor(name, api.UpdateMonitorInput{
+		Paused: &pause,
+	})
+	if err != nil {
+		return fmt.Errorf("error pausing monitor %v: %v", name, err)
+	}
+	fmt.Printf("monitor %v paused\n", name)
+	return nil
+}
+
+func (c *APIClient) UnPauseMonitor(name string, outputformat string) error {
+	pause := false
+	_, err := c.sdk.UpdateMonitor(name, api.UpdateMonitorInput{
+		Paused: &pause,
+	})
+	if err != nil {
+		return fmt.Errorf("error unpausing monitor %v: %v", name, err)
+	}
+	fmt.Printf("monitor %v unpaused\n", name)
 	return nil
 }

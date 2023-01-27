@@ -233,9 +233,6 @@ type UpdateMonitorInput struct {
 }
 
 func (c *UpdateMonitorInput) Validate() error {
-	if c.Config == nil {
-		return errors.New("config is required")
-	}
 	return nil
 }
 
@@ -257,25 +254,28 @@ func (s *Server) updateMonitor(c echo.Context) error {
 		}
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
 	}
-	switch monitor.MonitorType {
-	case "http":
-		// Validate config
-		err = validateHTTPMonitorConfig(input.Config)
-		if err != nil {
-			return s.returnErrorResponse(c, http.StatusBadRequest, err)
+	// only validate config if it is being updated
+	if input.Config != nil {
+		switch monitor.MonitorType {
+		case "http":
+			// Validate config
+			err = validateHTTPMonitorConfig(input.Config)
+			if err != nil {
+				return s.returnErrorResponse(c, http.StatusBadRequest, err)
+			}
+		case "browser":
+			// Validate config
+			err = validateBrowserMonitorConfig(input.Config)
+			if err != nil {
+				return s.returnErrorResponse(c, http.StatusBadRequest, err)
+			}
+		case "ping":
+			{
+				break
+			}
+		default:
+			return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 		}
-	case "browser":
-		// Validate config
-		err = validateBrowserMonitorConfig(input.Config)
-		if err != nil {
-			return s.returnErrorResponse(c, http.StatusBadRequest, err)
-		}
-	case "ping":
-		{
-			break
-		}
-	default:
-		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
 	monitor, err = s.dbConnection.UpdateMonitor(c.Request().Context(), monitor.Name, db.UpdateMonitorInput{
 		IntervalSeconds:  input.IntervalSeconds,

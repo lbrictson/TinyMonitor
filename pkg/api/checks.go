@@ -49,7 +49,7 @@ func performMonitoringChecks(name string, database *db.DatabaseConnection, logge
 				t = time.NewTicker(time.Duration(interval) * time.Second)
 			}
 			// Perform the check
-			logger.Infof("Performing check on monitor %s", name)
+			logger.Debugf("Performing check on monitor %s", name)
 			switch strings.ToLower(m.MonitorType) {
 			case "http":
 				// Perform an HTTP check
