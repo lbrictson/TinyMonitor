@@ -2,7 +2,6 @@ package alert
 
 import (
 	"crypto/tls"
-	"fmt"
 	"gopkg.in/gomail.v2"
 )
 
@@ -45,7 +44,6 @@ func (a *EmailAlerter) SendDown(monitorName string, message string) error {
 	m.SetHeader("Cc", a.cc...)
 	m.SetHeader("Bcc", a.bcc...)
 	m.SetHeader("Subject", "TinyStatus Monitor Down: "+monitorName)
-	fmt.Println(*m)
 	return a.conn.DialAndSend(m)
 }
 

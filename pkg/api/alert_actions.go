@@ -9,6 +9,12 @@ import (
 
 func fireAlertDown(monitor *db.BaseMonitor, message string, dbConn *db.DatabaseConnection, logger *logrus.Logger) {
 	ctx := context.TODO()
+	if monitor.Description != "" {
+		message = message + fmt.Sprintf(" | Description: %v", monitor.Description)
+	}
+	if len(monitor.Tags) > 0 {
+		message = message + fmt.Sprintf(" | Tags: %v", monitor.Tags)
+	}
 	for _, alertChannel := range monitor.AlertChannels {
 		alertChannelModel, err := dbConn.GetAlertChannel(ctx, alertChannel)
 		if err != nil {

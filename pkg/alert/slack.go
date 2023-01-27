@@ -21,7 +21,7 @@ type SlackAlerter struct {
 func (a *SlackAlerter) SendDown(monitorName string, message string) error {
 	// Send to slack using webhook method
 	attachment := slack.Attachment{
-		Color:      "red",
+		Color:      "danger",
 		Fallback:   "Monitor Down: " + monitorName,
 		AuthorName: "[ALERT] Monitor Down: " + monitorName,
 		Text:       message,

@@ -1,0 +1,7 @@
+{
+  "name": "pager",
+  "alert_channel_type": "pagerduty",
+  "config": {
+    "service_key": "${{pdkey}}"
+  }
+}

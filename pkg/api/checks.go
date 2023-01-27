@@ -299,7 +299,7 @@ func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logge
 	// Make sure request didn't breach timeout expectation
 	if time.Since(start) > time.Duration(specificConfig.TimeoutMS)*time.Millisecond {
 		logger.Warnf("HTTP request for monitor %s took longer than expected (%v vs limit of %v", monitor.Name, time.Since(start), time.Duration(specificConfig.TimeoutMS)*time.Millisecond)
-		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger, latencyMSFloat64)
+		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %vms", specificConfig.TimeoutMS), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	// Check the response code
@@ -400,7 +400,7 @@ func doBrowserCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, lo
 	}
 	if time.Since(start) > time.Duration(specificConfig.TimeoutMS)*time.Millisecond {
 		logger.Warnf("Request for monitor %s took longer than expected (%v vs limit %v)", monitor.Name, time.Since(start), time.Duration(specificConfig.TimeoutMS)*time.Millisecond)
-		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %v", specificConfig.TimeoutMS), monitor, database, logger, latencyMSFloat64)
+		processMonitorCheckDownResult(fmt.Sprintf("Request breached timeout value of %vms", specificConfig.TimeoutMS), monitor, database, logger, latencyMSFloat64)
 		return
 	}
 	if specificConfig.BodyContains != "" {
