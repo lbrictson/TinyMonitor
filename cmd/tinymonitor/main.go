@@ -34,10 +34,12 @@ func runServer() {
 	}
 	browserEnabled := true
 	// Setup browser automation testing
-	err := playwright.Install()
-	if err != nil {
-		browserEnabled = false
-		fmt.Printf("Error install playwright headless browser packages %v, browser based monitors will be disabled\n", err)
+	if os.Getenv("SKIP_PLAYWRIGHT") != "true" {
+		err := playwright.Install()
+		if err != nil {
+			browserEnabled = false
+			fmt.Printf("Error install playwright headless browser packages %v, browser based monitors will be disabled\n", err)
+		}
 	}
 	conf, err := config.ReadServerConfig()
 	if err != nil {

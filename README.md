@@ -1,6 +1,19 @@
 # TinyMonitor
 A headless monitoring system, designed to be simple to use and easy to maintain
 
+### Features
+
+- [x] Basic HTTP Monitors
+- [x] Headless Browser Monitors (chromium, firefox, webkit)
+- [x] ICMP Monitors
+- [x] Email Alerts
+- [x] Slack Alerts
+- [x] PagerDuty Alerts
+- [x] Webhook Alerts
+- [x] InfluxDB metric connector
+- [x] CloudWatch metric connector
+- [x] TimeStream dashboard
+
 ### Running Locally with Docker-Compose
 
 `docker-compose up -d --build`

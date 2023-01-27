@@ -1,0 +1,19 @@
+# Build in app in a Go container
+FROM docker.io/golang:1.19.5-buster as builder
+COPY ent /app/ent
+COPY cmd /app/cmd
+COPY pkg /app/pkg
+COPY vendor /app/vendor
+COPY go.mod /app/go.mod
+COPY go.sum /app/go.sum
+WORKDIR /app
+RUN go test ./...
+RUN go env -w GOPROXY=direct && go env -w GOSUMDB=off
+RUN CGO_ENABLED=0 go build -o main cmd/tinymonitor/main.go
+# Move artifact to smaller container with no Go tools installed
+FROM alpine:3.17.1
+WORKDIR /app
+RUN apk update && apk upgrade && apk --no-cache add ca-certificates bash
+COPY --from=builder /app/main tinymonitor
+ENV SKIP_PLAYWRIGHT=true
+ENTRYPOINT ["/app/tinymonitor", "server"]
