@@ -9,6 +9,19 @@ import (
 	"github.com/lbrictson/TinyMonitor/ent"
 )
 
+// The AlertChannelFunc type is an adapter to allow the use of ordinary
+// function as AlertChannel mutator.
+type AlertChannelFunc func(context.Context, *ent.AlertChannelMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f AlertChannelFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.AlertChannelMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AlertChannelMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The MonitorFunc type is an adapter to allow the use of ordinary
 // function as Monitor mutator.
 type MonitorFunc func(context.Context, *ent.MonitorMutation) (ent.Value, error)

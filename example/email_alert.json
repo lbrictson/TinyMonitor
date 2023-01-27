@@ -1,0 +1,14 @@
+{
+  "name": "email-me",
+  "alert_channel_type": "email",
+  "config": {
+    "to": ["${{myemailto}}"],
+    "from": "${{myemailfrom}}",
+    "bcc": [],
+    "cc": [],
+    "host": "${{myemailhost}}",
+    "port": 587,
+    "username": "${{myemailusername}}",
+    "password": "${{myemailpassword}}"
+  }
+}

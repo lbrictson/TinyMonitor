@@ -2,6 +2,7 @@ package schema
 
 import (
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"time"
 )
@@ -30,10 +31,15 @@ func (Monitor) Fields() []ent.Field {
 		field.Int("success_count").Default(0),
 		field.Int("success_threshold").Default(1),
 		field.Int("failure_threshold").Default(1),
+		field.Strings("tags").Optional(),
+		field.Bool("silenced").Default(false),
 	}
 }
 
 // Edges of the Monitor.
 func (Monitor) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("alert_channels", AlertChannel.Type).
+			Ref("monitors"),
+	}
 }

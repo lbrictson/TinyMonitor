@@ -6,6 +6,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 )
 
+// AlertChannel is the predicate function for alertchannel builders.
+type AlertChannel func(*sql.Selector)
+
 // Monitor is the predicate function for monitor builders.
 type Monitor func(*sql.Selector)
 

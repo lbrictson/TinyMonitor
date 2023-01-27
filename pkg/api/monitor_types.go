@@ -5,6 +5,12 @@ import (
 	"errors"
 )
 
+type PingMonitorConfig struct {
+	Host      string `json:"host"`
+	IPFamily  string `json:"ip_family"`
+	TimeoutMS int    `json:"timeout_ms"`
+}
+
 type BrowserMonitorConfig struct {
 	URL                string `json:"url"`
 	TimeoutMS          int    `json:"timeout_ms"`

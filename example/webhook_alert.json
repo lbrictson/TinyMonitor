@@ -1,0 +1,7 @@
+{
+  "name": "webhook",
+  "alert_channel_type": "webhook",
+  "config": {
+    "webhook_url": "https://webhook.site/ed08c8a4-a0fd-4896-a51b-fd11184a8f15"
+  }
+}

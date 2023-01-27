@@ -8,6 +8,20 @@ import (
 )
 
 var (
+	// AlertChannelsColumns holds the columns for the "alert_channels" table.
+	AlertChannelsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Size: 50},
+		{Name: "alert_channel_type", Type: field.TypeString},
+		{Name: "config", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// AlertChannelsTable holds the schema information for the "alert_channels" table.
+	AlertChannelsTable = &schema.Table{
+		Name:       "alert_channels",
+		Columns:    AlertChannelsColumns,
+		PrimaryKey: []*schema.Column{AlertChannelsColumns[0]},
+	}
 	// MonitorsColumns holds the columns for the "monitors" table.
 	MonitorsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Size: 50},
@@ -26,6 +40,8 @@ var (
 		{Name: "success_count", Type: field.TypeInt, Default: 0},
 		{Name: "success_threshold", Type: field.TypeInt, Default: 1},
 		{Name: "failure_threshold", Type: field.TypeInt, Default: 1},
+		{Name: "tags", Type: field.TypeJSON, Nullable: true},
+		{Name: "silenced", Type: field.TypeBool, Default: false},
 	}
 	// MonitorsTable holds the schema information for the "monitors" table.
 	MonitorsTable = &schema.Table{
@@ -77,14 +93,43 @@ var (
 		Columns:    UsersColumns,
 		PrimaryKey: []*schema.Column{UsersColumns[0]},
 	}
+	// AlertChannelMonitorsColumns holds the columns for the "alert_channel_monitors" table.
+	AlertChannelMonitorsColumns = []*schema.Column{
+		{Name: "alert_channel_id", Type: field.TypeString, Size: 50},
+		{Name: "monitor_id", Type: field.TypeString, Size: 50},
+	}
+	// AlertChannelMonitorsTable holds the schema information for the "alert_channel_monitors" table.
+	AlertChannelMonitorsTable = &schema.Table{
+		Name:       "alert_channel_monitors",
+		Columns:    AlertChannelMonitorsColumns,
+		PrimaryKey: []*schema.Column{AlertChannelMonitorsColumns[0], AlertChannelMonitorsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "alert_channel_monitors_alert_channel_id",
+				Columns:    []*schema.Column{AlertChannelMonitorsColumns[0]},
+				RefColumns: []*schema.Column{AlertChannelsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "alert_channel_monitors_monitor_id",
+				Columns:    []*schema.Column{AlertChannelMonitorsColumns[1]},
+				RefColumns: []*schema.Column{MonitorsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		AlertChannelsTable,
 		MonitorsTable,
 		SecretsTable,
 		SinksTable,
 		UsersTable,
+		AlertChannelMonitorsTable,
 	}
 )
 
 func init() {
+	AlertChannelMonitorsTable.ForeignKeys[0].RefTable = AlertChannelsTable
+	AlertChannelMonitorsTable.ForeignKeys[1].RefTable = MonitorsTable
 }

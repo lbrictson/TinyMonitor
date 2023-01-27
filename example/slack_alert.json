@@ -1,0 +1,7 @@
+{
+  "name": "slack",
+  "alert_channel_type": "slack",
+  "config": {
+    "webhook_url": "${{slackhook}}"
+  }
+}

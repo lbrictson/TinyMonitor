@@ -10,7 +10,9 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
+	"github.com/lbrictson/TinyMonitor/ent/alertchannel"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/predicate"
 )
@@ -241,9 +243,77 @@ func (mu *MonitorUpdate) AddFailureThreshold(i int) *MonitorUpdate {
 	return mu
 }
 
+// SetTags sets the "tags" field.
+func (mu *MonitorUpdate) SetTags(s []string) *MonitorUpdate {
+	mu.mutation.SetTags(s)
+	return mu
+}
+
+// AppendTags appends s to the "tags" field.
+func (mu *MonitorUpdate) AppendTags(s []string) *MonitorUpdate {
+	mu.mutation.AppendTags(s)
+	return mu
+}
+
+// ClearTags clears the value of the "tags" field.
+func (mu *MonitorUpdate) ClearTags() *MonitorUpdate {
+	mu.mutation.ClearTags()
+	return mu
+}
+
+// SetSilenced sets the "silenced" field.
+func (mu *MonitorUpdate) SetSilenced(b bool) *MonitorUpdate {
+	mu.mutation.SetSilenced(b)
+	return mu
+}
+
+// SetNillableSilenced sets the "silenced" field if the given value is not nil.
+func (mu *MonitorUpdate) SetNillableSilenced(b *bool) *MonitorUpdate {
+	if b != nil {
+		mu.SetSilenced(*b)
+	}
+	return mu
+}
+
+// AddAlertChannelIDs adds the "alert_channels" edge to the AlertChannel entity by IDs.
+func (mu *MonitorUpdate) AddAlertChannelIDs(ids ...string) *MonitorUpdate {
+	mu.mutation.AddAlertChannelIDs(ids...)
+	return mu
+}
+
+// AddAlertChannels adds the "alert_channels" edges to the AlertChannel entity.
+func (mu *MonitorUpdate) AddAlertChannels(a ...*AlertChannel) *MonitorUpdate {
+	ids := make([]string, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return mu.AddAlertChannelIDs(ids...)
+}
+
 // Mutation returns the MonitorMutation object of the builder.
 func (mu *MonitorUpdate) Mutation() *MonitorMutation {
 	return mu.mutation
+}
+
+// ClearAlertChannels clears all "alert_channels" edges to the AlertChannel entity.
+func (mu *MonitorUpdate) ClearAlertChannels() *MonitorUpdate {
+	mu.mutation.ClearAlertChannels()
+	return mu
+}
+
+// RemoveAlertChannelIDs removes the "alert_channels" edge to AlertChannel entities by IDs.
+func (mu *MonitorUpdate) RemoveAlertChannelIDs(ids ...string) *MonitorUpdate {
+	mu.mutation.RemoveAlertChannelIDs(ids...)
+	return mu
+}
+
+// RemoveAlertChannels removes "alert_channels" edges to AlertChannel entities.
+func (mu *MonitorUpdate) RemoveAlertChannels(a ...*AlertChannel) *MonitorUpdate {
+	ids := make([]string, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return mu.RemoveAlertChannelIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -386,6 +456,74 @@ func (mu *MonitorUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := mu.mutation.AddedFailureThreshold(); ok {
 		_spec.AddField(monitor.FieldFailureThreshold, field.TypeInt, value)
+	}
+	if value, ok := mu.mutation.Tags(); ok {
+		_spec.SetField(monitor.FieldTags, field.TypeJSON, value)
+	}
+	if value, ok := mu.mutation.AppendedTags(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, monitor.FieldTags, value)
+		})
+	}
+	if mu.mutation.TagsCleared() {
+		_spec.ClearField(monitor.FieldTags, field.TypeJSON)
+	}
+	if value, ok := mu.mutation.Silenced(); ok {
+		_spec.SetField(monitor.FieldSilenced, field.TypeBool, value)
+	}
+	if mu.mutation.AlertChannelsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.RemovedAlertChannelsIDs(); len(nodes) > 0 && !mu.mutation.AlertChannelsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := mu.mutation.AlertChannelsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, mu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -619,9 +757,77 @@ func (muo *MonitorUpdateOne) AddFailureThreshold(i int) *MonitorUpdateOne {
 	return muo
 }
 
+// SetTags sets the "tags" field.
+func (muo *MonitorUpdateOne) SetTags(s []string) *MonitorUpdateOne {
+	muo.mutation.SetTags(s)
+	return muo
+}
+
+// AppendTags appends s to the "tags" field.
+func (muo *MonitorUpdateOne) AppendTags(s []string) *MonitorUpdateOne {
+	muo.mutation.AppendTags(s)
+	return muo
+}
+
+// ClearTags clears the value of the "tags" field.
+func (muo *MonitorUpdateOne) ClearTags() *MonitorUpdateOne {
+	muo.mutation.ClearTags()
+	return muo
+}
+
+// SetSilenced sets the "silenced" field.
+func (muo *MonitorUpdateOne) SetSilenced(b bool) *MonitorUpdateOne {
+	muo.mutation.SetSilenced(b)
+	return muo
+}
+
+// SetNillableSilenced sets the "silenced" field if the given value is not nil.
+func (muo *MonitorUpdateOne) SetNillableSilenced(b *bool) *MonitorUpdateOne {
+	if b != nil {
+		muo.SetSilenced(*b)
+	}
+	return muo
+}
+
+// AddAlertChannelIDs adds the "alert_channels" edge to the AlertChannel entity by IDs.
+func (muo *MonitorUpdateOne) AddAlertChannelIDs(ids ...string) *MonitorUpdateOne {
+	muo.mutation.AddAlertChannelIDs(ids...)
+	return muo
+}
+
+// AddAlertChannels adds the "alert_channels" edges to the AlertChannel entity.
+func (muo *MonitorUpdateOne) AddAlertChannels(a ...*AlertChannel) *MonitorUpdateOne {
+	ids := make([]string, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return muo.AddAlertChannelIDs(ids...)
+}
+
 // Mutation returns the MonitorMutation object of the builder.
 func (muo *MonitorUpdateOne) Mutation() *MonitorMutation {
 	return muo.mutation
+}
+
+// ClearAlertChannels clears all "alert_channels" edges to the AlertChannel entity.
+func (muo *MonitorUpdateOne) ClearAlertChannels() *MonitorUpdateOne {
+	muo.mutation.ClearAlertChannels()
+	return muo
+}
+
+// RemoveAlertChannelIDs removes the "alert_channels" edge to AlertChannel entities by IDs.
+func (muo *MonitorUpdateOne) RemoveAlertChannelIDs(ids ...string) *MonitorUpdateOne {
+	muo.mutation.RemoveAlertChannelIDs(ids...)
+	return muo
+}
+
+// RemoveAlertChannels removes "alert_channels" edges to AlertChannel entities.
+func (muo *MonitorUpdateOne) RemoveAlertChannels(a ...*AlertChannel) *MonitorUpdateOne {
+	ids := make([]string, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return muo.RemoveAlertChannelIDs(ids...)
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -794,6 +1000,74 @@ func (muo *MonitorUpdateOne) sqlSave(ctx context.Context) (_node *Monitor, err e
 	}
 	if value, ok := muo.mutation.AddedFailureThreshold(); ok {
 		_spec.AddField(monitor.FieldFailureThreshold, field.TypeInt, value)
+	}
+	if value, ok := muo.mutation.Tags(); ok {
+		_spec.SetField(monitor.FieldTags, field.TypeJSON, value)
+	}
+	if value, ok := muo.mutation.AppendedTags(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, monitor.FieldTags, value)
+		})
+	}
+	if muo.mutation.TagsCleared() {
+		_spec.ClearField(monitor.FieldTags, field.TypeJSON)
+	}
+	if value, ok := muo.mutation.Silenced(); ok {
+		_spec.SetField(monitor.FieldSilenced, field.TypeBool, value)
+	}
+	if muo.mutation.AlertChannelsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.RemovedAlertChannelsIDs(); len(nodes) > 0 && !muo.mutation.AlertChannelsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := muo.mutation.AlertChannelsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &Monitor{config: muo.config}
 	_spec.Assign = _node.assignValues

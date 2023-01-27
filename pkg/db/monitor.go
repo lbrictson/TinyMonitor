@@ -26,11 +26,18 @@ type BaseMonitor struct {
 	SuccessCount        int                    `json:"success_count"`
 	SuccessThreshold    int                    `json:"success_threshold"`
 	FailureThreshold    int                    `json:"failure_threshold"`
+	Tags                []string               `json:"tags"`
+	AlertChannels       []string               `json:"alert_channels"`
+	Silenced            bool                   `json:"silenced"`
 }
 
 func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
 	if entMonitor == nil {
 		return nil
+	}
+	alerts := []string{}
+	for _, a := range entMonitor.Edges.AlertChannels {
+		alerts = append(alerts, a.ID)
 	}
 	return &BaseMonitor{
 		Name:                entMonitor.ID,
@@ -49,6 +56,9 @@ func convertEntMonitorToDBMonitor(entMonitor *ent.Monitor) *BaseMonitor {
 		SuccessCount:        entMonitor.SuccessCount,
 		SuccessThreshold:    entMonitor.SuccessThreshold,
 		FailureThreshold:    entMonitor.FailureThreshold,
+		Tags:                entMonitor.Tags,
+		AlertChannels:       alerts,
+		Silenced:            entMonitor.Silenced,
 	}
 }
 
@@ -57,10 +67,12 @@ type ListMonitorOptions struct {
 	Offset        *int
 	MonitorType   *string
 	MonitorStatus *string
+	Tag           *string
+	Silenced      *bool
 }
 
 func (db *DatabaseConnection) ListMonitors(ctx context.Context, options ListMonitorOptions) ([]*BaseMonitor, error) {
-	q := db.client.Monitor.Query()
+	q := db.client.Monitor.Query().WithAlertChannels()
 	if options.Limit != nil {
 		q = q.Limit(*options.Limit)
 	}
@@ -73,6 +85,9 @@ func (db *DatabaseConnection) ListMonitors(ctx context.Context, options ListMoni
 	if options.MonitorStatus != nil {
 		q = q.Where(monitor.Status(*options.MonitorStatus))
 	}
+	if options.Silenced != nil {
+		q = q.Where(monitor.Silenced(*options.Silenced))
+	}
 	q.Order(ent.Asc(monitor.FieldStatus))
 	monitors, err := q.All(ctx)
 	if err != nil {
@@ -80,9 +95,23 @@ func (db *DatabaseConnection) ListMonitors(ctx context.Context, options ListMoni
 	}
 	var dbMonitors []*BaseMonitor
 	for _, m := range monitors {
+		if options.Tag != nil {
+			if !isTagInArray(m.Tags, *options.Tag) {
+				continue
+			}
+		}
 		dbMonitors = append(dbMonitors, convertEntMonitorToDBMonitor(m))
 	}
 	return dbMonitors, nil
+}
+
+func isTagInArray(tags []string, tag string) bool {
+	for _, t := range tags {
+		if t == tag {
+			return true
+		}
+	}
+	return false
 }
 
 func (db *DatabaseConnection) DeleteMonitor(ctx context.Context, name string) error {
@@ -90,7 +119,7 @@ func (db *DatabaseConnection) DeleteMonitor(ctx context.Context, name string) er
 }
 
 func (db *DatabaseConnection) GetMonitorByName(ctx context.Context, name string) (*BaseMonitor, error) {
-	m, err := db.client.Monitor.Get(ctx, name)
+	m, err := db.client.Monitor.Query().WithAlertChannels().Where(monitor.ID(name)).Only(ctx)
 	return convertEntMonitorToDBMonitor(m), err
 }
 
@@ -102,6 +131,8 @@ type CreateMonitorInput struct {
 	Description      string                 `json:"description"`
 	SuccessThreshold int                    `json:"success_threshold"`
 	FailureThreshold int                    `json:"failure_threshold"`
+	Tags             []string               `json:"tags"`
+	AlertChannels    []string               `json:"alert_channels"`
 }
 
 func (i *CreateMonitorInput) validate() error {
@@ -140,6 +171,8 @@ func (db *DatabaseConnection) CreateMonitor(ctx context.Context, input CreateMon
 		SetStatus("Initializing").
 		SetSuccessThreshold(input.SuccessThreshold).
 		SetFailureThreshold(input.FailureThreshold).
+		SetTags(input.Tags).
+		AddAlertChannelIDs(input.AlertChannels...).
 		Save(ctx)
 	return convertEntMonitorToDBMonitor(m), err
 }
@@ -157,6 +190,9 @@ type UpdateMonitorInput struct {
 	SuccessThreshold    *int                   `json:"success_threshold"`
 	FailureThreshold    *int                   `json:"failure_threshold"`
 	CurrentOutageReason *string                `json:"current_outage_reason"`
+	Tags                *[]string              `json:"tags"`
+	AlertChannels       *[]string              `json:"alert_channels"`
+	Silenced            *bool                  `json:"silenced"`
 }
 
 func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, name string, input UpdateMonitorInput) (*BaseMonitor, error) {
@@ -196,6 +232,15 @@ func (db *DatabaseConnection) UpdateMonitor(ctx context.Context, name string, in
 	}
 	if input.CurrentOutageReason != nil {
 		update = update.SetCurrentDownReason(*input.CurrentOutageReason)
+	}
+	if input.Tags != nil {
+		update = update.SetTags(*input.Tags)
+	}
+	if input.AlertChannels != nil {
+		update = update.ClearAlertChannels().AddAlertChannelIDs(*input.AlertChannels...)
+	}
+	if input.Silenced != nil {
+		update = update.SetSilenced(*input.Silenced)
 	}
 	m, err := update.Save(ctx)
 	return convertEntMonitorToDBMonitor(m), err

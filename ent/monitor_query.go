@@ -4,12 +4,14 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/lbrictson/TinyMonitor/ent/alertchannel"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/predicate"
 )
@@ -17,12 +19,13 @@ import (
 // MonitorQuery is the builder for querying Monitor entities.
 type MonitorQuery struct {
 	config
-	limit      *int
-	offset     *int
-	unique     *bool
-	order      []OrderFunc
-	fields     []string
-	predicates []predicate.Monitor
+	limit             *int
+	offset            *int
+	unique            *bool
+	order             []OrderFunc
+	fields            []string
+	predicates        []predicate.Monitor
+	withAlertChannels *AlertChannelQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -57,6 +60,28 @@ func (mq *MonitorQuery) Unique(unique bool) *MonitorQuery {
 func (mq *MonitorQuery) Order(o ...OrderFunc) *MonitorQuery {
 	mq.order = append(mq.order, o...)
 	return mq
+}
+
+// QueryAlertChannels chains the current query on the "alert_channels" edge.
+func (mq *MonitorQuery) QueryAlertChannels() *AlertChannelQuery {
+	query := &AlertChannelQuery{config: mq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := mq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := mq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(monitor.Table, monitor.FieldID, selector),
+			sqlgraph.To(alertchannel.Table, alertchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, monitor.AlertChannelsTable, monitor.AlertChannelsPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(mq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first Monitor entity from the query.
@@ -235,16 +260,28 @@ func (mq *MonitorQuery) Clone() *MonitorQuery {
 		return nil
 	}
 	return &MonitorQuery{
-		config:     mq.config,
-		limit:      mq.limit,
-		offset:     mq.offset,
-		order:      append([]OrderFunc{}, mq.order...),
-		predicates: append([]predicate.Monitor{}, mq.predicates...),
+		config:            mq.config,
+		limit:             mq.limit,
+		offset:            mq.offset,
+		order:             append([]OrderFunc{}, mq.order...),
+		predicates:        append([]predicate.Monitor{}, mq.predicates...),
+		withAlertChannels: mq.withAlertChannels.Clone(),
 		// clone intermediate query.
 		sql:    mq.sql.Clone(),
 		path:   mq.path,
 		unique: mq.unique,
 	}
+}
+
+// WithAlertChannels tells the query-builder to eager-load the nodes that are connected to
+// the "alert_channels" edge. The optional arguments are used to configure the query builder of the edge.
+func (mq *MonitorQuery) WithAlertChannels(opts ...func(*AlertChannelQuery)) *MonitorQuery {
+	query := &AlertChannelQuery{config: mq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	mq.withAlertChannels = query
+	return mq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -318,8 +355,11 @@ func (mq *MonitorQuery) prepareQuery(ctx context.Context) error {
 
 func (mq *MonitorQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Monitor, error) {
 	var (
-		nodes = []*Monitor{}
-		_spec = mq.querySpec()
+		nodes       = []*Monitor{}
+		_spec       = mq.querySpec()
+		loadedTypes = [1]bool{
+			mq.withAlertChannels != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Monitor).scanValues(nil, columns)
@@ -327,6 +367,7 @@ func (mq *MonitorQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Moni
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &Monitor{config: mq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -338,7 +379,73 @@ func (mq *MonitorQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Moni
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := mq.withAlertChannels; query != nil {
+		if err := mq.loadAlertChannels(ctx, query, nodes,
+			func(n *Monitor) { n.Edges.AlertChannels = []*AlertChannel{} },
+			func(n *Monitor, e *AlertChannel) { n.Edges.AlertChannels = append(n.Edges.AlertChannels, e) }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (mq *MonitorQuery) loadAlertChannels(ctx context.Context, query *AlertChannelQuery, nodes []*Monitor, init func(*Monitor), assign func(*Monitor, *AlertChannel)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[string]*Monitor)
+	nids := make(map[string]map[*Monitor]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(monitor.AlertChannelsTable)
+		s.Join(joinT).On(s.C(alertchannel.FieldID), joinT.C(monitor.AlertChannelsPrimaryKey[0]))
+		s.Where(sql.InValues(joinT.C(monitor.AlertChannelsPrimaryKey[1]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(monitor.AlertChannelsPrimaryKey[1]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	neighbors, err := query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+		assign := spec.Assign
+		values := spec.ScanValues
+		spec.ScanValues = func(columns []string) ([]any, error) {
+			values, err := values(columns[1:])
+			if err != nil {
+				return nil, err
+			}
+			return append([]any{new(sql.NullString)}, values...), nil
+		}
+		spec.Assign = func(columns []string, values []any) error {
+			outValue := values[0].(*sql.NullString).String
+			inValue := values[1].(*sql.NullString).String
+			if nids[inValue] == nil {
+				nids[inValue] = map[*Monitor]struct{}{byID[outValue]: {}}
+				return assign(columns[1:], values[1:])
+			}
+			nids[inValue][byID[outValue]] = struct{}{}
+			return nil
+		}
+	})
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "alert_channels" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
 }
 
 func (mq *MonitorQuery) sqlCount(ctx context.Context) (int, error) {

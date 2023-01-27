@@ -30,6 +30,9 @@ type MonitorModel struct {
 	SuccessCount              int                    `json:"success_count"`
 	SuccessThreshold          int                    `json:"success_threshold"`
 	FailureThreshold          int                    `json:"failure_threshold"`
+	Tags                      []string               `json:"tags"`
+	AlertChannels             []string               `json:"alert_channels"`
+	Silenced                  bool                   `json:"silenced"`
 }
 
 func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
@@ -58,6 +61,9 @@ func convertDBMonitorToAPIMonitor(dbMonitor *db.BaseMonitor) *MonitorModel {
 		FailureCount:              dbMonitor.FailureCount,
 		SuccessThreshold:          dbMonitor.SuccessThreshold,
 		FailureThreshold:          dbMonitor.FailureThreshold,
+		Tags:                      dbMonitor.Tags,
+		AlertChannels:             dbMonitor.AlertChannels,
+		Silenced:                  dbMonitor.Silenced,
 	}
 }
 
@@ -67,6 +73,8 @@ func (s *Server) listMonitors(c echo.Context) error {
 		Offset:        nil,
 		MonitorType:   nil,
 		MonitorStatus: nil,
+		Tag:           nil,
+		Silenced:      nil,
 	}
 	if c.QueryParam("limit") != "" {
 		limit := c.QueryParam("limit")
@@ -93,6 +101,18 @@ func (s *Server) listMonitors(c echo.Context) error {
 	if c.QueryParam("status") != "" {
 		monitorStatus := c.QueryParam("status")
 		ops.MonitorStatus = &monitorStatus
+	}
+	if c.QueryParam("tag") != "" {
+		tag := c.QueryParam("tag")
+		ops.Tag = &tag
+	}
+	if c.QueryParam("silenced") != "" {
+		silenced := c.QueryParam("silenced")
+		silencedBool, err := strconv.ParseBool(silenced)
+		if err != nil {
+			return s.returnErrorResponse(c, http.StatusBadRequest, err)
+		}
+		ops.Silenced = &silencedBool
 	}
 	monitors, err := s.dbConnection.ListMonitors(c.Request().Context(), ops)
 	if err != nil {
@@ -125,6 +145,9 @@ type CreateMonitorInput struct {
 	Config           map[string]interface{} `json:"config"`
 	SuccessThreshold int                    `json:"success_threshold"`
 	FailureThreshold int                    `json:"failure_threshold"`
+	Tags             []string               `json:"tags"`
+	AlertChannels    []string               `json:"alert_channels"`
+	Silenced         bool                   `json:"silenced"`
 }
 
 func (c *CreateMonitorInput) Validate() error {
@@ -172,6 +195,10 @@ func (s *Server) createMonitor(c echo.Context) error {
 		if err != nil {
 			return s.returnErrorResponse(c, http.StatusBadRequest, err)
 		}
+	case "ping":
+		{
+			break
+		}
 	default:
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
@@ -183,6 +210,8 @@ func (s *Server) createMonitor(c echo.Context) error {
 		Description:      input.Description,
 		SuccessThreshold: input.SuccessThreshold,
 		FailureThreshold: input.FailureThreshold,
+		Tags:             input.Tags,
+		AlertChannels:    input.AlertChannels,
 	})
 	if err != nil {
 		return s.returnErrorResponse(c, http.StatusInternalServerError, err)
@@ -198,6 +227,9 @@ type UpdateMonitorInput struct {
 	Description      *string                `json:"description"`
 	SuccessThreshold *int                   `json:"success_threshold"`
 	FailureThreshold *int                   `json:"failure_threshold"`
+	Tags             *[]string              `json:"tags"`
+	AlertChannels    *[]string              `json:"alert_channels"`
+	Silenced         *bool                  `json:"silenced"`
 }
 
 func (c *UpdateMonitorInput) Validate() error {
@@ -238,6 +270,10 @@ func (s *Server) updateMonitor(c echo.Context) error {
 		if err != nil {
 			return s.returnErrorResponse(c, http.StatusBadRequest, err)
 		}
+	case "ping":
+		{
+			break
+		}
 	default:
 		return s.returnErrorResponse(c, http.StatusBadRequest, errors.New("invalid monitor_type: expected one of [http]"))
 	}
@@ -248,6 +284,9 @@ func (s *Server) updateMonitor(c echo.Context) error {
 		Description:      input.Description,
 		SuccessThreshold: input.SuccessThreshold,
 		FailureThreshold: input.FailureThreshold,
+		Tags:             input.Tags,
+		AlertChannels:    input.AlertChannels,
+		Silenced:         input.Silenced,
 	})
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {

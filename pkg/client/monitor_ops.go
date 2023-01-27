@@ -46,6 +46,14 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 						Name:  "status",
 						Usage: "Filter by monitor status",
 					},
+					&cli.StringFlag{
+						Name:  "tag",
+						Usage: "Filter by tag",
+					},
+					&cli.BoolFlag{
+						Name:  "silenced",
+						Usage: "Filter by silenced",
+					},
 				},
 				Action: func(context *cli.Context) error {
 					ops := ListMonitorOptions{}
@@ -64,6 +72,14 @@ func (c *APIClient) LoadMonitorCLICommands() *cli.Command {
 					if context.IsSet("status") {
 						s := context.String("status")
 						ops.Status = &s
+					}
+					if context.IsSet("tag") {
+						t := context.String("tag")
+						ops.Tag = &t
+					}
+					if context.IsSet("silenced") {
+						s := context.Bool("silenced")
+						ops.Silenced = &s
 					}
 					return c.ListMonitors(ops, context.String("output"))
 				},
@@ -159,18 +175,22 @@ func printTextMonitorData(data []api.MonitorModel) {
 }
 
 type ListMonitorOptions struct {
-	Limit  *int
-	Offset *int
-	Type   *string
-	Status *string
+	Limit    *int
+	Offset   *int
+	Type     *string
+	Status   *string
+	Tag      *string
+	Silenced *bool
 }
 
 func (c *APIClient) ListMonitors(options ListMonitorOptions, outputFormat string) error {
 	data, err := c.sdk.ListMonitors(sdk.ListMonitorOptions{
-		Limit:  options.Limit,
-		Offset: options.Offset,
-		Type:   options.Type,
-		Status: options.Status,
+		Limit:    options.Limit,
+		Offset:   options.Offset,
+		Type:     options.Type,
+		Status:   options.Status,
+		Tag:      options.Tag,
+		Silenced: options.Silenced,
 	})
 	if err != nil {
 		return fmt.Errorf("error listing monitors: %v", err)
@@ -199,6 +219,12 @@ func (c *APIClient) EditMonitor(name string) error {
 	if err != nil {
 		return fmt.Errorf("error editing monitor %v: %v", name, err)
 	}
+	if data.AlertChannels == nil {
+		data.AlertChannels = []string{}
+	}
+	if data.Tags == nil {
+		data.Tags = []string{}
+	}
 	monitor := api.UpdateMonitorInput{
 		IntervalSeconds:  &data.IntervalSeconds,
 		Paused:           &data.Paused,
@@ -206,6 +232,9 @@ func (c *APIClient) EditMonitor(name string) error {
 		Description:      &data.Description,
 		SuccessThreshold: &data.SuccessThreshold,
 		FailureThreshold: &data.FailureThreshold,
+		Tags:             &data.Tags,
+		AlertChannels:    &data.AlertChannels,
+		Silenced:         &data.Silenced,
 	}
 	editedData, err := editStructInEditor(monitor)
 	if err != nil {
@@ -217,10 +246,15 @@ func (c *APIClient) EditMonitor(name string) error {
 		return fmt.Errorf("error editing monitor %v: %v", name, err)
 	}
 	Updates := api.UpdateMonitorInput{
-		IntervalSeconds: editedMonitor.IntervalSeconds,
-		Paused:          editedMonitor.Paused,
-		Config:          editedMonitor.Config,
-		Description:     editedMonitor.Description,
+		IntervalSeconds:  editedMonitor.IntervalSeconds,
+		Paused:           editedMonitor.Paused,
+		Config:           editedMonitor.Config,
+		Description:      editedMonitor.Description,
+		Tags:             editedMonitor.Tags,
+		SuccessThreshold: editedMonitor.SuccessThreshold,
+		FailureThreshold: editedMonitor.FailureThreshold,
+		AlertChannels:    editedMonitor.AlertChannels,
+		Silenced:         editedMonitor.Silenced,
 	}
 	_, err = c.sdk.UpdateMonitor(name, Updates)
 	if err != nil {
@@ -254,6 +288,9 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 			Config:           monitor.Config,
 			SuccessThreshold: monitor.SuccessThreshold,
 			FailureThreshold: monitor.FailureThreshold,
+			Tags:             monitor.Tags,
+			AlertChannels:    monitor.AlertChannels,
+			Silenced:         monitor.Silenced,
 		})
 		if err != nil {
 			return fmt.Errorf("error creating monitor %v: %v", monitor.Name, err)
@@ -269,6 +306,9 @@ func (c *APIClient) ApplyMonitor(fileLocation string, outputformat string) error
 		Description:      &monitor.Description,
 		SuccessThreshold: &monitor.SuccessThreshold,
 		FailureThreshold: &monitor.FailureThreshold,
+		Tags:             &monitor.Tags,
+		AlertChannels:    &monitor.AlertChannels,
+		Silenced:         &monitor.Silenced,
 	})
 	if err != nil {
 		return fmt.Errorf("error updating monitor %v: %v", monitor.Name, err)

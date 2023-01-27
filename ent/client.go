@@ -10,6 +10,7 @@ import (
 
 	"github.com/lbrictson/TinyMonitor/ent/migrate"
 
+	"github.com/lbrictson/TinyMonitor/ent/alertchannel"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/secret"
 	"github.com/lbrictson/TinyMonitor/ent/sink"
@@ -17,6 +18,7 @@ import (
 
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -24,6 +26,8 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// AlertChannel is the client for interacting with the AlertChannel builders.
+	AlertChannel *AlertChannelClient
 	// Monitor is the client for interacting with the Monitor builders.
 	Monitor *MonitorClient
 	// Secret is the client for interacting with the Secret builders.
@@ -45,6 +49,7 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.AlertChannel = NewAlertChannelClient(c.config)
 	c.Monitor = NewMonitorClient(c.config)
 	c.Secret = NewSecretClient(c.config)
 	c.Sink = NewSinkClient(c.config)
@@ -80,12 +85,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Monitor: NewMonitorClient(cfg),
-		Secret:  NewSecretClient(cfg),
-		Sink:    NewSinkClient(cfg),
-		User:    NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		AlertChannel: NewAlertChannelClient(cfg),
+		Monitor:      NewMonitorClient(cfg),
+		Secret:       NewSecretClient(cfg),
+		Sink:         NewSinkClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
@@ -103,19 +109,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:     ctx,
-		config:  cfg,
-		Monitor: NewMonitorClient(cfg),
-		Secret:  NewSecretClient(cfg),
-		Sink:    NewSinkClient(cfg),
-		User:    NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		AlertChannel: NewAlertChannelClient(cfg),
+		Monitor:      NewMonitorClient(cfg),
+		Secret:       NewSecretClient(cfg),
+		Sink:         NewSinkClient(cfg),
+		User:         NewUserClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Monitor.
+//		AlertChannel.
 //		Query().
 //		Count(ctx)
 func (c *Client) Debug() *Client {
@@ -137,10 +144,117 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.AlertChannel.Use(hooks...)
 	c.Monitor.Use(hooks...)
 	c.Secret.Use(hooks...)
 	c.Sink.Use(hooks...)
 	c.User.Use(hooks...)
+}
+
+// AlertChannelClient is a client for the AlertChannel schema.
+type AlertChannelClient struct {
+	config
+}
+
+// NewAlertChannelClient returns a client for the AlertChannel from the given config.
+func NewAlertChannelClient(c config) *AlertChannelClient {
+	return &AlertChannelClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `alertchannel.Hooks(f(g(h())))`.
+func (c *AlertChannelClient) Use(hooks ...Hook) {
+	c.hooks.AlertChannel = append(c.hooks.AlertChannel, hooks...)
+}
+
+// Create returns a builder for creating a AlertChannel entity.
+func (c *AlertChannelClient) Create() *AlertChannelCreate {
+	mutation := newAlertChannelMutation(c.config, OpCreate)
+	return &AlertChannelCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of AlertChannel entities.
+func (c *AlertChannelClient) CreateBulk(builders ...*AlertChannelCreate) *AlertChannelCreateBulk {
+	return &AlertChannelCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for AlertChannel.
+func (c *AlertChannelClient) Update() *AlertChannelUpdate {
+	mutation := newAlertChannelMutation(c.config, OpUpdate)
+	return &AlertChannelUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *AlertChannelClient) UpdateOne(ac *AlertChannel) *AlertChannelUpdateOne {
+	mutation := newAlertChannelMutation(c.config, OpUpdateOne, withAlertChannel(ac))
+	return &AlertChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *AlertChannelClient) UpdateOneID(id string) *AlertChannelUpdateOne {
+	mutation := newAlertChannelMutation(c.config, OpUpdateOne, withAlertChannelID(id))
+	return &AlertChannelUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for AlertChannel.
+func (c *AlertChannelClient) Delete() *AlertChannelDelete {
+	mutation := newAlertChannelMutation(c.config, OpDelete)
+	return &AlertChannelDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *AlertChannelClient) DeleteOne(ac *AlertChannel) *AlertChannelDeleteOne {
+	return c.DeleteOneID(ac.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *AlertChannelClient) DeleteOneID(id string) *AlertChannelDeleteOne {
+	builder := c.Delete().Where(alertchannel.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &AlertChannelDeleteOne{builder}
+}
+
+// Query returns a query builder for AlertChannel.
+func (c *AlertChannelClient) Query() *AlertChannelQuery {
+	return &AlertChannelQuery{
+		config: c.config,
+	}
+}
+
+// Get returns a AlertChannel entity by its id.
+func (c *AlertChannelClient) Get(ctx context.Context, id string) (*AlertChannel, error) {
+	return c.Query().Where(alertchannel.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *AlertChannelClient) GetX(ctx context.Context, id string) *AlertChannel {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryMonitors queries the monitors edge of a AlertChannel.
+func (c *AlertChannelClient) QueryMonitors(ac *AlertChannel) *MonitorQuery {
+	query := &MonitorQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ac.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(alertchannel.Table, alertchannel.FieldID, id),
+			sqlgraph.To(monitor.Table, monitor.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, alertchannel.MonitorsTable, alertchannel.MonitorsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ac.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *AlertChannelClient) Hooks() []Hook {
+	return c.hooks.AlertChannel
 }
 
 // MonitorClient is a client for the Monitor schema.
@@ -226,6 +340,22 @@ func (c *MonitorClient) GetX(ctx context.Context, id string) *Monitor {
 		panic(err)
 	}
 	return obj
+}
+
+// QueryAlertChannels queries the alert_channels edge of a Monitor.
+func (c *MonitorClient) QueryAlertChannels(m *Monitor) *AlertChannelQuery {
+	query := &AlertChannelQuery{config: c.config}
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(monitor.Table, monitor.FieldID, id),
+			sqlgraph.To(alertchannel.Table, alertchannel.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, monitor.AlertChannelsTable, monitor.AlertChannelsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.

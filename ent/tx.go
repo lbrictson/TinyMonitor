@@ -12,6 +12,8 @@ import (
 // Tx is a transactional client that is created by calling Client.Tx().
 type Tx struct {
 	config
+	// AlertChannel is the client for interacting with the AlertChannel builders.
+	AlertChannel *AlertChannelClient
 	// Monitor is the client for interacting with the Monitor builders.
 	Monitor *MonitorClient
 	// Secret is the client for interacting with the Secret builders.
@@ -151,6 +153,7 @@ func (tx *Tx) Client() *Client {
 }
 
 func (tx *Tx) init() {
+	tx.AlertChannel = NewAlertChannelClient(tx.config)
 	tx.Monitor = NewMonitorClient(tx.config)
 	tx.Secret = NewSecretClient(tx.config)
 	tx.Sink = NewSinkClient(tx.config)
@@ -164,7 +167,7 @@ func (tx *Tx) init() {
 // of them in order to commit or rollback the transaction.
 //
 // If a closed transaction is embedded in one of the generated entities, and the entity
-// applies a query, for example: Monitor.QueryXXX(), the query will be executed
+// applies a query, for example: AlertChannel.QueryXXX(), the query will be executed
 // through the driver which created this transaction.
 //
 // Note that txDriver is not goroutine safe.

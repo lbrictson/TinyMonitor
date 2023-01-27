@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/lbrictson/TinyMonitor/ent/predicate"
 )
 
@@ -175,6 +176,13 @@ func SuccessThreshold(v int) predicate.Monitor {
 func FailureThreshold(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// Silenced applies equality check predicate on the "silenced" field. It's identical to SilencedEQ.
+func Silenced(v bool) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSilenced), v))
 	})
 }
 
@@ -1175,6 +1183,62 @@ func FailureThresholdLT(v int) predicate.Monitor {
 func FailureThresholdLTE(v int) predicate.Monitor {
 	return predicate.Monitor(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldFailureThreshold), v))
+	})
+}
+
+// TagsIsNil applies the IsNil predicate on the "tags" field.
+func TagsIsNil() predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.IsNull(s.C(FieldTags)))
+	})
+}
+
+// TagsNotNil applies the NotNil predicate on the "tags" field.
+func TagsNotNil() predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NotNull(s.C(FieldTags)))
+	})
+}
+
+// SilencedEQ applies the EQ predicate on the "silenced" field.
+func SilencedEQ(v bool) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.EQ(s.C(FieldSilenced), v))
+	})
+}
+
+// SilencedNEQ applies the NEQ predicate on the "silenced" field.
+func SilencedNEQ(v bool) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		s.Where(sql.NEQ(s.C(FieldSilenced), v))
+	})
+}
+
+// HasAlertChannels applies the HasEdge predicate on the "alert_channels" edge.
+func HasAlertChannels() predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AlertChannelsTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, AlertChannelsTable, AlertChannelsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAlertChannelsWith applies the HasEdge predicate on the "alert_channels" edge with a given conditions (other predicates).
+func HasAlertChannelsWith(preds ...predicate.AlertChannel) predicate.Monitor {
+	return predicate.Monitor(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AlertChannelsInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, AlertChannelsTable, AlertChannelsPrimaryKey...),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

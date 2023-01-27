@@ -1,0 +1,15 @@
+{
+  "name": "sample-ping",
+  "description": "This is a human readable description, it wills how up in alerts",
+  "interval_seconds": 10,
+  "monitor_type": "ping",
+  "config": {
+    "timeout_ms": 90,
+    "host": "8.8.8.8",
+    "ip_family": "ipv4"
+  },
+  "tags": ["google"],
+  "paused": false,
+  "success_threshold": 1,
+  "failure_threshold": 3
+}

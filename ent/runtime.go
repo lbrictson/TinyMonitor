@@ -5,6 +5,7 @@ package ent
 import (
 	"time"
 
+	"github.com/lbrictson/TinyMonitor/ent/alertchannel"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/schema"
 	"github.com/lbrictson/TinyMonitor/ent/secret"
@@ -16,6 +17,36 @@ import (
 // (default values, validators, hooks and policies) and stitches it
 // to their package variables.
 func init() {
+	alertchannelFields := schema.AlertChannel{}.Fields()
+	_ = alertchannelFields
+	// alertchannelDescCreatedAt is the schema descriptor for created_at field.
+	alertchannelDescCreatedAt := alertchannelFields[3].Descriptor()
+	// alertchannel.DefaultCreatedAt holds the default value on creation for the created_at field.
+	alertchannel.DefaultCreatedAt = alertchannelDescCreatedAt.Default.(func() time.Time)
+	// alertchannelDescUpdatedAt is the schema descriptor for updated_at field.
+	alertchannelDescUpdatedAt := alertchannelFields[4].Descriptor()
+	// alertchannel.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	alertchannel.DefaultUpdatedAt = alertchannelDescUpdatedAt.Default.(func() time.Time)
+	// alertchannel.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	alertchannel.UpdateDefaultUpdatedAt = alertchannelDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// alertchannelDescID is the schema descriptor for id field.
+	alertchannelDescID := alertchannelFields[0].Descriptor()
+	// alertchannel.IDValidator is a validator for the "id" field. It is called by the builders before save.
+	alertchannel.IDValidator = func() func(string) error {
+		validators := alertchannelDescID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(id string) error {
+			for _, fn := range fns {
+				if err := fn(id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	monitorFields := schema.Monitor{}.Fields()
 	_ = monitorFields
 	// monitorDescDescription is the schema descriptor for description field.
@@ -64,6 +95,10 @@ func init() {
 	monitorDescFailureThreshold := monitorFields[15].Descriptor()
 	// monitor.DefaultFailureThreshold holds the default value on creation for the failure_threshold field.
 	monitor.DefaultFailureThreshold = monitorDescFailureThreshold.Default.(int)
+	// monitorDescSilenced is the schema descriptor for silenced field.
+	monitorDescSilenced := monitorFields[17].Descriptor()
+	// monitor.DefaultSilenced holds the default value on creation for the silenced field.
+	monitor.DefaultSilenced = monitorDescSilenced.Default.(bool)
 	// monitorDescID is the schema descriptor for id field.
 	monitorDescID := monitorFields[0].Descriptor()
 	// monitor.IDValidator is a validator for the "id" field. It is called by the builders before save.

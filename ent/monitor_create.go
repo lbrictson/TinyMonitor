@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/lbrictson/TinyMonitor/ent/alertchannel"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 )
 
@@ -206,10 +207,45 @@ func (mc *MonitorCreate) SetNillableFailureThreshold(i *int) *MonitorCreate {
 	return mc
 }
 
+// SetTags sets the "tags" field.
+func (mc *MonitorCreate) SetTags(s []string) *MonitorCreate {
+	mc.mutation.SetTags(s)
+	return mc
+}
+
+// SetSilenced sets the "silenced" field.
+func (mc *MonitorCreate) SetSilenced(b bool) *MonitorCreate {
+	mc.mutation.SetSilenced(b)
+	return mc
+}
+
+// SetNillableSilenced sets the "silenced" field if the given value is not nil.
+func (mc *MonitorCreate) SetNillableSilenced(b *bool) *MonitorCreate {
+	if b != nil {
+		mc.SetSilenced(*b)
+	}
+	return mc
+}
+
 // SetID sets the "id" field.
 func (mc *MonitorCreate) SetID(s string) *MonitorCreate {
 	mc.mutation.SetID(s)
 	return mc
+}
+
+// AddAlertChannelIDs adds the "alert_channels" edge to the AlertChannel entity by IDs.
+func (mc *MonitorCreate) AddAlertChannelIDs(ids ...string) *MonitorCreate {
+	mc.mutation.AddAlertChannelIDs(ids...)
+	return mc
+}
+
+// AddAlertChannels adds the "alert_channels" edges to the AlertChannel entity.
+func (mc *MonitorCreate) AddAlertChannels(a ...*AlertChannel) *MonitorCreate {
+	ids := make([]string, len(a))
+	for i := range a {
+		ids[i] = a[i].ID
+	}
+	return mc.AddAlertChannelIDs(ids...)
 }
 
 // Mutation returns the MonitorMutation object of the builder.
@@ -333,6 +369,10 @@ func (mc *MonitorCreate) defaults() {
 		v := monitor.DefaultFailureThreshold
 		mc.mutation.SetFailureThreshold(v)
 	}
+	if _, ok := mc.mutation.Silenced(); !ok {
+		v := monitor.DefaultSilenced
+		mc.mutation.SetSilenced(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -378,6 +418,9 @@ func (mc *MonitorCreate) check() error {
 	}
 	if _, ok := mc.mutation.FailureThreshold(); !ok {
 		return &ValidationError{Name: "failure_threshold", err: errors.New(`ent: missing required field "Monitor.failure_threshold"`)}
+	}
+	if _, ok := mc.mutation.Silenced(); !ok {
+		return &ValidationError{Name: "silenced", err: errors.New(`ent: missing required field "Monitor.silenced"`)}
 	}
 	if v, ok := mc.mutation.ID(); ok {
 		if err := monitor.IDValidator(v); err != nil {
@@ -479,6 +522,33 @@ func (mc *MonitorCreate) createSpec() (*Monitor, *sqlgraph.CreateSpec) {
 	if value, ok := mc.mutation.FailureThreshold(); ok {
 		_spec.SetField(monitor.FieldFailureThreshold, field.TypeInt, value)
 		_node.FailureThreshold = value
+	}
+	if value, ok := mc.mutation.Tags(); ok {
+		_spec.SetField(monitor.FieldTags, field.TypeJSON, value)
+		_node.Tags = value
+	}
+	if value, ok := mc.mutation.Silenced(); ok {
+		_spec.SetField(monitor.FieldSilenced, field.TypeBool, value)
+		_node.Silenced = value
+	}
+	if nodes := mc.mutation.AlertChannelsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: true,
+			Table:   monitor.AlertChannelsTable,
+			Columns: monitor.AlertChannelsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: alertchannel.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

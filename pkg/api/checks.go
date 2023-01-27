@@ -8,9 +8,11 @@ import (
 	"github.com/lbrictson/TinyMonitor/pkg/db"
 	"github.com/lbrictson/TinyMonitor/pkg/sink"
 	"github.com/playwright-community/playwright-go"
+	probing "github.com/prometheus-community/pro-bing"
 	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -59,6 +61,8 @@ func performMonitoringChecks(name string, database *db.DatabaseConnection, logge
 				}
 				// Perform a browser check
 				doBrowserCheck(m, database, logger)
+			case "ping":
+				doPingCheck(m, database, logger)
 			}
 		}
 	}
@@ -121,6 +125,7 @@ func processMonitorCheckDownResult(failureExplanation string, monitor *db.BaseMo
 			changes.Status = &down
 			changes.StatusLastChangedAt = &now
 			changes.CurrentOutageReason = &failureExplanation
+			fireAlertDown(monitor, failureExplanation, database, logger)
 		}
 		_, err := database.UpdateMonitor(context.Background(), monitor.Name, changes)
 		if err != nil {
@@ -167,12 +172,16 @@ func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnec
 		SuccessCount:        &successCount,
 	}
 	// If the monitor is down or Initializing, update the database
-	if strings.ToLower(monitor.Status) == "down" || monitor.Status == "initializing" {
+	if strings.ToLower(monitor.Status) == "down" || strings.ToLower(monitor.Status) == "initializing" {
 		// Only update if success threshold has been reached
 		if successCount >= monitor.SuccessThreshold {
 			up := "Up"
 			changes.Status = &up
 			changes.StatusLastChangedAt = &now
+			// Fire up alert if the monitor was originally down
+			if strings.ToLower(monitor.Status) == "down" {
+				fireAlertUp(monitor, database, logger)
+			}
 		}
 	}
 	_, err := database.UpdateMonitor(context.Background(), monitor.Name, changes)
@@ -202,6 +211,51 @@ func processMonitorOkResult(monitor *db.BaseMonitor, database *db.DatabaseConnec
 			logger.Warnf("Failed to send metric to %v: %v", k, senderErr)
 		}
 	}
+}
+
+func doPingCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {
+	specificConfig := PingMonitorConfig{}
+	b, err := json.Marshal(monitor.Config)
+	if err != nil {
+		logger.Warnf("Failed to marshal monitor config: %v", err)
+		return
+	}
+	err = json.Unmarshal(b, &specificConfig)
+	if err != nil {
+		logger.Warnf("Failed to unmarshal monitor config: %v", err)
+		return
+	}
+	ping, err := probing.NewPinger(specificConfig.Host)
+	if err != nil {
+		logger.Warnf("Failed to create ping process for monitor %v: %v", monitor.Name, err)
+		return
+	}
+	// If windows set privileged to true
+	if runtime.GOOS == "windows" {
+		ping.SetPrivileged(true)
+	}
+	if runtime.GOOS == "linux" {
+		ping.SetPrivileged(false)
+	}
+	ping.Count = 1
+	ping.Timeout = time.Duration(specificConfig.TimeoutMS) * time.Millisecond
+	err = ping.Run()
+	if err != nil {
+		logger.Warnf("Failed to run ping process for monitor %v: %v", monitor.Name, err)
+		return
+	}
+	stats := ping.Statistics()
+	if stats.PacketsRecv == 0 {
+		logger.Warnf("Failed to receive ping response for monitor %v", monitor.Name)
+		processMonitorCheckDownResult("No packets received", monitor, database, logger, 0)
+		return
+	}
+	latencyMS := float64(stats.AvgRtt.Milliseconds())
+	if latencyMS > float64(specificConfig.TimeoutMS) {
+		processMonitorCheckDownResult("Timeout exceeded", monitor, database, logger, latencyMS)
+		return
+	}
+	processMonitorOkResult(monitor, database, logger, latencyMS)
 }
 
 func doHTTPCheck(monitor *db.BaseMonitor, database *db.DatabaseConnection, logger *logrus.Logger) {

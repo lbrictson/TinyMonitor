@@ -8,10 +8,12 @@ import (
 )
 
 type ListMonitorOptions struct {
-	Limit  *int
-	Offset *int
-	Type   *string
-	Status *string
+	Limit    *int
+	Offset   *int
+	Type     *string
+	Status   *string
+	Tag      *string
+	Silenced *bool
 }
 
 func (c *Client) ListMonitors(opts ListMonitorOptions) ([]api.MonitorModel, error) {
@@ -29,6 +31,12 @@ func (c *Client) ListMonitors(opts ListMonitorOptions) ([]api.MonitorModel, erro
 	}
 	if opts.Status != nil {
 		path += fmt.Sprintf("&status=%v", *opts.Status)
+	}
+	if opts.Tag != nil {
+		path += fmt.Sprintf("&tag=%v", *opts.Tag)
+	}
+	if opts.Silenced != nil {
+		path += fmt.Sprintf("&silenced=%v", *opts.Silenced)
 	}
 	data, err := c.do(path, "GET", nil)
 	if err != nil {

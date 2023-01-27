@@ -28,3 +28,16 @@ func ValidateSinkType(sinkType string) error {
 	}
 	return nil
 }
+
+func ValidateAlertChannelType(alertChannelType string) error {
+	if alertChannelType == "" {
+		return errors.New("alert_channel_type is required")
+	}
+	available := []string{"email", "pagerduty", "slack", "webhook"}
+	for _, s := range available {
+		if alertChannelType == s {
+			return nil
+		}
+	}
+	return nil
+}

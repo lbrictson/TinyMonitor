@@ -47,6 +47,31 @@ type Monitor struct {
 	SuccessThreshold int `json:"success_threshold,omitempty"`
 	// FailureThreshold holds the value of the "failure_threshold" field.
 	FailureThreshold int `json:"failure_threshold,omitempty"`
+	// Tags holds the value of the "tags" field.
+	Tags []string `json:"tags,omitempty"`
+	// Silenced holds the value of the "silenced" field.
+	Silenced bool `json:"silenced,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the MonitorQuery when eager-loading is set.
+	Edges MonitorEdges `json:"edges"`
+}
+
+// MonitorEdges holds the relations/edges for other nodes in the graph.
+type MonitorEdges struct {
+	// AlertChannels holds the value of the alert_channels edge.
+	AlertChannels []*AlertChannel `json:"alert_channels,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// AlertChannelsOrErr returns the AlertChannels value or an error if the edge
+// was not loaded in eager-loading.
+func (e MonitorEdges) AlertChannelsOrErr() ([]*AlertChannel, error) {
+	if e.loadedTypes[0] {
+		return e.AlertChannels, nil
+	}
+	return nil, &NotLoadedError{edge: "alert_channels"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -54,9 +79,9 @@ func (*Monitor) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case monitor.FieldConfig:
+		case monitor.FieldConfig, monitor.FieldTags:
 			values[i] = new([]byte)
-		case monitor.FieldPaused:
+		case monitor.FieldPaused, monitor.FieldSilenced:
 			values[i] = new(sql.NullBool)
 		case monitor.FieldIntervalSeconds, monitor.FieldFailureCount, monitor.FieldSuccessCount, monitor.FieldSuccessThreshold, monitor.FieldFailureThreshold:
 			values[i] = new(sql.NullInt64)
@@ -178,9 +203,28 @@ func (m *Monitor) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				m.FailureThreshold = int(value.Int64)
 			}
+		case monitor.FieldTags:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field tags", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &m.Tags); err != nil {
+					return fmt.Errorf("unmarshal field tags: %w", err)
+				}
+			}
+		case monitor.FieldSilenced:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field silenced", values[i])
+			} else if value.Valid {
+				m.Silenced = value.Bool
+			}
 		}
 	}
 	return nil
+}
+
+// QueryAlertChannels queries the "alert_channels" edge of the Monitor entity.
+func (m *Monitor) QueryAlertChannels() *AlertChannelQuery {
+	return (&MonitorClient{config: m.config}).QueryAlertChannels(m)
 }
 
 // Update returns a builder for updating this Monitor.
@@ -252,6 +296,12 @@ func (m *Monitor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("failure_threshold=")
 	builder.WriteString(fmt.Sprintf("%v", m.FailureThreshold))
+	builder.WriteString(", ")
+	builder.WriteString("tags=")
+	builder.WriteString(fmt.Sprintf("%v", m.Tags))
+	builder.WriteString(", ")
+	builder.WriteString("silenced=")
+	builder.WriteString(fmt.Sprintf("%v", m.Silenced))
 	builder.WriteByte(')')
 	return builder.String()
 }

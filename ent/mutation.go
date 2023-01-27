@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lbrictson/TinyMonitor/ent/alertchannel"
 	"github.com/lbrictson/TinyMonitor/ent/monitor"
 	"github.com/lbrictson/TinyMonitor/ent/predicate"
 	"github.com/lbrictson/TinyMonitor/ent/secret"
@@ -27,11 +28,584 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeMonitor = "Monitor"
-	TypeSecret  = "Secret"
-	TypeSink    = "Sink"
-	TypeUser    = "User"
+	TypeAlertChannel = "AlertChannel"
+	TypeMonitor      = "Monitor"
+	TypeSecret       = "Secret"
+	TypeSink         = "Sink"
+	TypeUser         = "User"
 )
+
+// AlertChannelMutation represents an operation that mutates the AlertChannel nodes in the graph.
+type AlertChannelMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *string
+	alert_channel_type *string
+	_config            *map[string]interface{}
+	created_at         *time.Time
+	updated_at         *time.Time
+	clearedFields      map[string]struct{}
+	monitors           map[string]struct{}
+	removedmonitors    map[string]struct{}
+	clearedmonitors    bool
+	done               bool
+	oldValue           func(context.Context) (*AlertChannel, error)
+	predicates         []predicate.AlertChannel
+}
+
+var _ ent.Mutation = (*AlertChannelMutation)(nil)
+
+// alertchannelOption allows management of the mutation configuration using functional options.
+type alertchannelOption func(*AlertChannelMutation)
+
+// newAlertChannelMutation creates new mutation for the AlertChannel entity.
+func newAlertChannelMutation(c config, op Op, opts ...alertchannelOption) *AlertChannelMutation {
+	m := &AlertChannelMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeAlertChannel,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withAlertChannelID sets the ID field of the mutation.
+func withAlertChannelID(id string) alertchannelOption {
+	return func(m *AlertChannelMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *AlertChannel
+		)
+		m.oldValue = func(ctx context.Context) (*AlertChannel, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().AlertChannel.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withAlertChannel sets the old AlertChannel of the mutation.
+func withAlertChannel(node *AlertChannel) alertchannelOption {
+	return func(m *AlertChannelMutation) {
+		m.oldValue = func(context.Context) (*AlertChannel, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m AlertChannelMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m AlertChannelMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of AlertChannel entities.
+func (m *AlertChannelMutation) SetID(id string) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *AlertChannelMutation) ID() (id string, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *AlertChannelMutation) IDs(ctx context.Context) ([]string, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []string{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().AlertChannel.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetAlertChannelType sets the "alert_channel_type" field.
+func (m *AlertChannelMutation) SetAlertChannelType(s string) {
+	m.alert_channel_type = &s
+}
+
+// AlertChannelType returns the value of the "alert_channel_type" field in the mutation.
+func (m *AlertChannelMutation) AlertChannelType() (r string, exists bool) {
+	v := m.alert_channel_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAlertChannelType returns the old "alert_channel_type" field's value of the AlertChannel entity.
+// If the AlertChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AlertChannelMutation) OldAlertChannelType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAlertChannelType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAlertChannelType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAlertChannelType: %w", err)
+	}
+	return oldValue.AlertChannelType, nil
+}
+
+// ResetAlertChannelType resets all changes to the "alert_channel_type" field.
+func (m *AlertChannelMutation) ResetAlertChannelType() {
+	m.alert_channel_type = nil
+}
+
+// SetConfig sets the "config" field.
+func (m *AlertChannelMutation) SetConfig(value map[string]interface{}) {
+	m._config = &value
+}
+
+// Config returns the value of the "config" field in the mutation.
+func (m *AlertChannelMutation) Config() (r map[string]interface{}, exists bool) {
+	v := m._config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConfig returns the old "config" field's value of the AlertChannel entity.
+// If the AlertChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AlertChannelMutation) OldConfig(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConfig: %w", err)
+	}
+	return oldValue.Config, nil
+}
+
+// ResetConfig resets all changes to the "config" field.
+func (m *AlertChannelMutation) ResetConfig() {
+	m._config = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *AlertChannelMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *AlertChannelMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the AlertChannel entity.
+// If the AlertChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AlertChannelMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *AlertChannelMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *AlertChannelMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *AlertChannelMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the AlertChannel entity.
+// If the AlertChannel object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AlertChannelMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *AlertChannelMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddMonitorIDs adds the "monitors" edge to the Monitor entity by ids.
+func (m *AlertChannelMutation) AddMonitorIDs(ids ...string) {
+	if m.monitors == nil {
+		m.monitors = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.monitors[ids[i]] = struct{}{}
+	}
+}
+
+// ClearMonitors clears the "monitors" edge to the Monitor entity.
+func (m *AlertChannelMutation) ClearMonitors() {
+	m.clearedmonitors = true
+}
+
+// MonitorsCleared reports if the "monitors" edge to the Monitor entity was cleared.
+func (m *AlertChannelMutation) MonitorsCleared() bool {
+	return m.clearedmonitors
+}
+
+// RemoveMonitorIDs removes the "monitors" edge to the Monitor entity by IDs.
+func (m *AlertChannelMutation) RemoveMonitorIDs(ids ...string) {
+	if m.removedmonitors == nil {
+		m.removedmonitors = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.monitors, ids[i])
+		m.removedmonitors[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedMonitors returns the removed IDs of the "monitors" edge to the Monitor entity.
+func (m *AlertChannelMutation) RemovedMonitorsIDs() (ids []string) {
+	for id := range m.removedmonitors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// MonitorsIDs returns the "monitors" edge IDs in the mutation.
+func (m *AlertChannelMutation) MonitorsIDs() (ids []string) {
+	for id := range m.monitors {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetMonitors resets all changes to the "monitors" edge.
+func (m *AlertChannelMutation) ResetMonitors() {
+	m.monitors = nil
+	m.clearedmonitors = false
+	m.removedmonitors = nil
+}
+
+// Where appends a list predicates to the AlertChannelMutation builder.
+func (m *AlertChannelMutation) Where(ps ...predicate.AlertChannel) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// Op returns the operation name.
+func (m *AlertChannelMutation) Op() Op {
+	return m.op
+}
+
+// Type returns the node type of this mutation (AlertChannel).
+func (m *AlertChannelMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *AlertChannelMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.alert_channel_type != nil {
+		fields = append(fields, alertchannel.FieldAlertChannelType)
+	}
+	if m._config != nil {
+		fields = append(fields, alertchannel.FieldConfig)
+	}
+	if m.created_at != nil {
+		fields = append(fields, alertchannel.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, alertchannel.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *AlertChannelMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case alertchannel.FieldAlertChannelType:
+		return m.AlertChannelType()
+	case alertchannel.FieldConfig:
+		return m.Config()
+	case alertchannel.FieldCreatedAt:
+		return m.CreatedAt()
+	case alertchannel.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *AlertChannelMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case alertchannel.FieldAlertChannelType:
+		return m.OldAlertChannelType(ctx)
+	case alertchannel.FieldConfig:
+		return m.OldConfig(ctx)
+	case alertchannel.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case alertchannel.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown AlertChannel field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AlertChannelMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case alertchannel.FieldAlertChannelType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAlertChannelType(v)
+		return nil
+	case alertchannel.FieldConfig:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfig(v)
+		return nil
+	case alertchannel.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case alertchannel.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown AlertChannel field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *AlertChannelMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *AlertChannelMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *AlertChannelMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AlertChannel numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *AlertChannelMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *AlertChannelMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *AlertChannelMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown AlertChannel nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *AlertChannelMutation) ResetField(name string) error {
+	switch name {
+	case alertchannel.FieldAlertChannelType:
+		m.ResetAlertChannelType()
+		return nil
+	case alertchannel.FieldConfig:
+		m.ResetConfig()
+		return nil
+	case alertchannel.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case alertchannel.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown AlertChannel field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *AlertChannelMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.monitors != nil {
+		edges = append(edges, alertchannel.EdgeMonitors)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *AlertChannelMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case alertchannel.EdgeMonitors:
+		ids := make([]ent.Value, 0, len(m.monitors))
+		for id := range m.monitors {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *AlertChannelMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedmonitors != nil {
+		edges = append(edges, alertchannel.EdgeMonitors)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *AlertChannelMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case alertchannel.EdgeMonitors:
+		ids := make([]ent.Value, 0, len(m.removedmonitors))
+		for id := range m.removedmonitors {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *AlertChannelMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedmonitors {
+		edges = append(edges, alertchannel.EdgeMonitors)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *AlertChannelMutation) EdgeCleared(name string) bool {
+	switch name {
+	case alertchannel.EdgeMonitors:
+		return m.clearedmonitors
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *AlertChannelMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown AlertChannel unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *AlertChannelMutation) ResetEdge(name string) error {
+	switch name {
+	case alertchannel.EdgeMonitors:
+		m.ResetMonitors()
+		return nil
+	}
+	return fmt.Errorf("unknown AlertChannel edge %s", name)
+}
 
 // MonitorMutation represents an operation that mutates the Monitor nodes in the graph.
 type MonitorMutation struct {
@@ -59,7 +633,13 @@ type MonitorMutation struct {
 	addsuccess_threshold   *int
 	failure_threshold      *int
 	addfailure_threshold   *int
+	tags                   *[]string
+	appendtags             []string
+	silenced               *bool
 	clearedFields          map[string]struct{}
+	alert_channels         map[string]struct{}
+	removedalert_channels  map[string]struct{}
+	clearedalert_channels  bool
 	done                   bool
 	oldValue               func(context.Context) (*Monitor, error)
 	predicates             []predicate.Monitor
@@ -822,6 +1402,161 @@ func (m *MonitorMutation) ResetFailureThreshold() {
 	m.addfailure_threshold = nil
 }
 
+// SetTags sets the "tags" field.
+func (m *MonitorMutation) SetTags(s []string) {
+	m.tags = &s
+	m.appendtags = nil
+}
+
+// Tags returns the value of the "tags" field in the mutation.
+func (m *MonitorMutation) Tags() (r []string, exists bool) {
+	v := m.tags
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTags returns the old "tags" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldTags(ctx context.Context) (v []string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTags is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTags requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTags: %w", err)
+	}
+	return oldValue.Tags, nil
+}
+
+// AppendTags adds s to the "tags" field.
+func (m *MonitorMutation) AppendTags(s []string) {
+	m.appendtags = append(m.appendtags, s...)
+}
+
+// AppendedTags returns the list of values that were appended to the "tags" field in this mutation.
+func (m *MonitorMutation) AppendedTags() ([]string, bool) {
+	if len(m.appendtags) == 0 {
+		return nil, false
+	}
+	return m.appendtags, true
+}
+
+// ClearTags clears the value of the "tags" field.
+func (m *MonitorMutation) ClearTags() {
+	m.tags = nil
+	m.appendtags = nil
+	m.clearedFields[monitor.FieldTags] = struct{}{}
+}
+
+// TagsCleared returns if the "tags" field was cleared in this mutation.
+func (m *MonitorMutation) TagsCleared() bool {
+	_, ok := m.clearedFields[monitor.FieldTags]
+	return ok
+}
+
+// ResetTags resets all changes to the "tags" field.
+func (m *MonitorMutation) ResetTags() {
+	m.tags = nil
+	m.appendtags = nil
+	delete(m.clearedFields, monitor.FieldTags)
+}
+
+// SetSilenced sets the "silenced" field.
+func (m *MonitorMutation) SetSilenced(b bool) {
+	m.silenced = &b
+}
+
+// Silenced returns the value of the "silenced" field in the mutation.
+func (m *MonitorMutation) Silenced() (r bool, exists bool) {
+	v := m.silenced
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSilenced returns the old "silenced" field's value of the Monitor entity.
+// If the Monitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *MonitorMutation) OldSilenced(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSilenced is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSilenced requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSilenced: %w", err)
+	}
+	return oldValue.Silenced, nil
+}
+
+// ResetSilenced resets all changes to the "silenced" field.
+func (m *MonitorMutation) ResetSilenced() {
+	m.silenced = nil
+}
+
+// AddAlertChannelIDs adds the "alert_channels" edge to the AlertChannel entity by ids.
+func (m *MonitorMutation) AddAlertChannelIDs(ids ...string) {
+	if m.alert_channels == nil {
+		m.alert_channels = make(map[string]struct{})
+	}
+	for i := range ids {
+		m.alert_channels[ids[i]] = struct{}{}
+	}
+}
+
+// ClearAlertChannels clears the "alert_channels" edge to the AlertChannel entity.
+func (m *MonitorMutation) ClearAlertChannels() {
+	m.clearedalert_channels = true
+}
+
+// AlertChannelsCleared reports if the "alert_channels" edge to the AlertChannel entity was cleared.
+func (m *MonitorMutation) AlertChannelsCleared() bool {
+	return m.clearedalert_channels
+}
+
+// RemoveAlertChannelIDs removes the "alert_channels" edge to the AlertChannel entity by IDs.
+func (m *MonitorMutation) RemoveAlertChannelIDs(ids ...string) {
+	if m.removedalert_channels == nil {
+		m.removedalert_channels = make(map[string]struct{})
+	}
+	for i := range ids {
+		delete(m.alert_channels, ids[i])
+		m.removedalert_channels[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedAlertChannels returns the removed IDs of the "alert_channels" edge to the AlertChannel entity.
+func (m *MonitorMutation) RemovedAlertChannelsIDs() (ids []string) {
+	for id := range m.removedalert_channels {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// AlertChannelsIDs returns the "alert_channels" edge IDs in the mutation.
+func (m *MonitorMutation) AlertChannelsIDs() (ids []string) {
+	for id := range m.alert_channels {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetAlertChannels resets all changes to the "alert_channels" edge.
+func (m *MonitorMutation) ResetAlertChannels() {
+	m.alert_channels = nil
+	m.clearedalert_channels = false
+	m.removedalert_channels = nil
+}
+
 // Where appends a list predicates to the MonitorMutation builder.
 func (m *MonitorMutation) Where(ps ...predicate.Monitor) {
 	m.predicates = append(m.predicates, ps...)
@@ -841,7 +1576,7 @@ func (m *MonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *MonitorMutation) Fields() []string {
-	fields := make([]string, 0, 15)
+	fields := make([]string, 0, 17)
 	if m.description != nil {
 		fields = append(fields, monitor.FieldDescription)
 	}
@@ -887,6 +1622,12 @@ func (m *MonitorMutation) Fields() []string {
 	if m.failure_threshold != nil {
 		fields = append(fields, monitor.FieldFailureThreshold)
 	}
+	if m.tags != nil {
+		fields = append(fields, monitor.FieldTags)
+	}
+	if m.silenced != nil {
+		fields = append(fields, monitor.FieldSilenced)
+	}
 	return fields
 }
 
@@ -925,6 +1666,10 @@ func (m *MonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.SuccessThreshold()
 	case monitor.FieldFailureThreshold:
 		return m.FailureThreshold()
+	case monitor.FieldTags:
+		return m.Tags()
+	case monitor.FieldSilenced:
+		return m.Silenced()
 	}
 	return nil, false
 }
@@ -964,6 +1709,10 @@ func (m *MonitorMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldSuccessThreshold(ctx)
 	case monitor.FieldFailureThreshold:
 		return m.OldFailureThreshold(ctx)
+	case monitor.FieldTags:
+		return m.OldTags(ctx)
+	case monitor.FieldSilenced:
+		return m.OldSilenced(ctx)
 	}
 	return nil, fmt.Errorf("unknown Monitor field %s", name)
 }
@@ -1078,6 +1827,20 @@ func (m *MonitorMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFailureThreshold(v)
 		return nil
+	case monitor.FieldTags:
+		v, ok := value.([]string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTags(v)
+		return nil
+	case monitor.FieldSilenced:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSilenced(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Monitor field %s", name)
 }
@@ -1174,6 +1937,9 @@ func (m *MonitorMutation) ClearedFields() []string {
 	if m.FieldCleared(monitor.FieldLastCheckedAt) {
 		fields = append(fields, monitor.FieldLastCheckedAt)
 	}
+	if m.FieldCleared(monitor.FieldTags) {
+		fields = append(fields, monitor.FieldTags)
+	}
 	return fields
 }
 
@@ -1190,6 +1956,9 @@ func (m *MonitorMutation) ClearField(name string) error {
 	switch name {
 	case monitor.FieldLastCheckedAt:
 		m.ClearLastCheckedAt()
+		return nil
+	case monitor.FieldTags:
+		m.ClearTags()
 		return nil
 	}
 	return fmt.Errorf("unknown Monitor nullable field %s", name)
@@ -1244,55 +2013,97 @@ func (m *MonitorMutation) ResetField(name string) error {
 	case monitor.FieldFailureThreshold:
 		m.ResetFailureThreshold()
 		return nil
+	case monitor.FieldTags:
+		m.ResetTags()
+		return nil
+	case monitor.FieldSilenced:
+		m.ResetSilenced()
+		return nil
 	}
 	return fmt.Errorf("unknown Monitor field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *MonitorMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.alert_channels != nil {
+		edges = append(edges, monitor.EdgeAlertChannels)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *MonitorMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case monitor.EdgeAlertChannels:
+		ids := make([]ent.Value, 0, len(m.alert_channels))
+		for id := range m.alert_channels {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *MonitorMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedalert_channels != nil {
+		edges = append(edges, monitor.EdgeAlertChannels)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *MonitorMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case monitor.EdgeAlertChannels:
+		ids := make([]ent.Value, 0, len(m.removedalert_channels))
+		for id := range m.removedalert_channels {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *MonitorMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedalert_channels {
+		edges = append(edges, monitor.EdgeAlertChannels)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *MonitorMutation) EdgeCleared(name string) bool {
+	switch name {
+	case monitor.EdgeAlertChannels:
+		return m.clearedalert_channels
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *MonitorMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown Monitor unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *MonitorMutation) ResetEdge(name string) error {
+	switch name {
+	case monitor.EdgeAlertChannels:
+		m.ResetAlertChannels()
+		return nil
+	}
 	return fmt.Errorf("unknown Monitor edge %s", name)
 }
 

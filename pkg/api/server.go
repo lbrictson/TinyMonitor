@@ -90,6 +90,12 @@ func (s *Server) Run() {
 	e.DELETE("/api/v1/sink/:id", s.deleteSink, s.userAuthRequired, s.adminRequired)
 	e.GET("/api/v1/sink/:id", s.getSink, s.userAuthRequired)
 	e.PATCH("/api/v1/sink/:id", s.updateSink, s.userAuthRequired, s.adminRequired)
+	// Alert Channels API
+	e.GET("/api/v1/alert-channel", s.listAlertChannels, s.userAuthRequired)
+	e.POST("/api/v1/alert-channel", s.createAlertChannel, s.userAuthRequired, s.adminRequired)
+	e.DELETE("/api/v1/alert-channel/:id", s.deleteAlertChannel, s.userAuthRequired, s.adminRequired)
+	e.GET("/api/v1/alert-channel/:id", s.getAlertChannel, s.userAuthRequired)
+	e.PATCH("/api/v1/alert-channel/:id", s.updateAlertChannel, s.userAuthRequired, s.adminRequired)
 	// Utility routes
 	e.GET("/api/v1/health", func(c echo.Context) error {
 		return c.String(200, "OK")
@@ -114,7 +120,7 @@ func (s *Server) initialStartMonitors() {
 		s.logger.Fatalf("Error listing monitors: %v", err)
 	}
 	for _, monitor := range monitors {
-		time.Sleep(1 * time.Second)
+		time.Sleep(3 * time.Second)
 		go performMonitoringChecks(monitor.Name, s.dbConnection, s.logger)
 	}
 }

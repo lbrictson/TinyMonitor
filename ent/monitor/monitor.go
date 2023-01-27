@@ -41,8 +41,19 @@ const (
 	FieldSuccessThreshold = "success_threshold"
 	// FieldFailureThreshold holds the string denoting the failure_threshold field in the database.
 	FieldFailureThreshold = "failure_threshold"
+	// FieldTags holds the string denoting the tags field in the database.
+	FieldTags = "tags"
+	// FieldSilenced holds the string denoting the silenced field in the database.
+	FieldSilenced = "silenced"
+	// EdgeAlertChannels holds the string denoting the alert_channels edge name in mutations.
+	EdgeAlertChannels = "alert_channels"
 	// Table holds the table name of the monitor in the database.
 	Table = "monitors"
+	// AlertChannelsTable is the table that holds the alert_channels relation/edge. The primary key declared below.
+	AlertChannelsTable = "alert_channel_monitors"
+	// AlertChannelsInverseTable is the table name for the AlertChannel entity.
+	// It exists in this package in order to avoid circular dependency with the "alertchannel" package.
+	AlertChannelsInverseTable = "alert_channels"
 )
 
 // Columns holds all SQL columns for monitor fields.
@@ -63,7 +74,15 @@ var Columns = []string{
 	FieldSuccessCount,
 	FieldSuccessThreshold,
 	FieldFailureThreshold,
+	FieldTags,
+	FieldSilenced,
 }
+
+var (
+	// AlertChannelsPrimaryKey and AlertChannelsColumn2 are the table columns denoting the
+	// primary key for the alert_channels relation (M2M).
+	AlertChannelsPrimaryKey = []string{"alert_channel_id", "monitor_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -100,6 +119,8 @@ var (
 	DefaultSuccessThreshold int
 	// DefaultFailureThreshold holds the default value on creation for the "failure_threshold" field.
 	DefaultFailureThreshold int
+	// DefaultSilenced holds the default value on creation for the "silenced" field.
+	DefaultSilenced bool
 	// IDValidator is a validator for the "id" field. It is called by the builders before save.
 	IDValidator func(string) error
 )
